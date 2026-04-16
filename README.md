@@ -453,18 +453,18 @@ run-lisp <input.lisp> [max_ticks]
 
 **Ссылка на схему datapath:**
 
-```text
+
 ![Datapath](fig/datapath_lab4.drawio.png)
-```
+
 
 
 ### Control Unit
 
 **Ссылка на схему control unit:**
 
-```text
+
 ![ControlUnit](fig/CU_lab4.drawio.png)
-```
+
 
 ### Сигналы управления
 
