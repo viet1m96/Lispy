@@ -1,0 +1,376 @@
+halted : true
+reason : halt instruction
+ticks  : 368
+pc     : 0x000000b0
+phase  : execute
+output : "Hello\n5\nYello"
+
+[trace]
+tick=0000 phase=fetch   pc=0x00000000 ir=0x00020537 lui a0, 32               | ir <- mem[0x00000000]
+tick=0001 phase=execute pc=0x00000000 ir=0x00020537 lui a0, 32               | a0 <- 0x00020000; pc <- 0x00000004
+tick=0002 phase=fetch   pc=0x00000004 ir=0x00050513 addi a0, a0, 0           | ir <- mem[0x00000004]
+tick=0003 phase=execute pc=0x00000004 ir=0x00050513 addi a0, a0, 0           | a0 <- 0x00020000; pc <- 0x00000008
+tick=0004 phase=fetch   pc=0x00000008 ir=0x00020fb7 lui t6, 32               | ir <- mem[0x00000008]
+tick=0005 phase=execute pc=0x00000008 ir=0x00020fb7 lui t6, 32               | t6 <- 0x00020000; pc <- 0x0000000c
+tick=0006 phase=fetch   pc=0x0000000c ir=0x018f8f93 addi t6, t6, 24          | ir <- mem[0x0000000c]
+tick=0007 phase=execute pc=0x0000000c ir=0x018f8f93 addi t6, t6, 24          | t6 <- 0x00020018; pc <- 0x00000010
+tick=0008 phase=fetch   pc=0x00000010 ir=0x00afa023 sw a0, 0(t6)             | ir <- mem[0x00000010]
+tick=0009 phase=execute pc=0x00000010 ir=0x00afa023 sw a0, 0(t6)             | mem[0x00020018] <- 0x00020000; pc <- 0x00000014
+tick=0010 phase=fetch   pc=0x00000014 ir=0x00020537 lui a0, 32               | ir <- mem[0x00000014]
+tick=0011 phase=execute pc=0x00000014 ir=0x00020537 lui a0, 32               | a0 <- 0x00020000; pc <- 0x00000018
+tick=0012 phase=fetch   pc=0x00000018 ir=0x01850513 addi a0, a0, 24          | ir <- mem[0x00000018]
+tick=0013 phase=execute pc=0x00000018 ir=0x01850513 addi a0, a0, 24          | a0 <- 0x00020018; pc <- 0x0000001c
+tick=0014 phase=fetch   pc=0x0000001c ir=0x00052503 lw a0, 0(a0)             | ir <- mem[0x0000001c]
+tick=0015 phase=execute pc=0x0000001c ir=0x00052503 lw a0, 0(a0)             | mem[0x00020018] -> 0x00020000; a0 <- 0x00020000; pc <- 0x00000020
+tick=0016 phase=fetch   pc=0x00000020 ir=0x124000ef jal ra, 292              | ir <- mem[0x00000020]
+tick=0017 phase=execute pc=0x00000020 ir=0x124000ef jal ra, 292              | ra <- 0x00000024; pc <- 0x00000144
+tick=0018 phase=fetch   pc=0x00000144 ir=0xffc10113 addi sp, sp, -4          | ir <- mem[0x00000144]
+tick=0019 phase=execute pc=0x00000144 ir=0xffc10113 addi sp, sp, -4          | sp <- 0x000efffc; pc <- 0x00000148
+tick=0020 phase=fetch   pc=0x00000148 ir=0x00a12023 sw a0, 0(sp)             | ir <- mem[0x00000148]
+tick=0021 phase=execute pc=0x00000148 ir=0x00a12023 sw a0, 0(sp)             | mem[0x000efffc] <- 0x00020000; pc <- 0x0000014c
+tick=0022 phase=fetch   pc=0x0000014c ir=0x00052283 lw t0, 0(a0)             | ir <- mem[0x0000014c]
+tick=0023 phase=execute pc=0x0000014c ir=0x00052283 lw t0, 0(a0)             | mem[0x00020000] -> 0x00000005; t0 <- 0x00000005; pc <- 0x00000150
+tick=0024 phase=fetch   pc=0x00000150 ir=0x00450313 addi t1, a0, 4           | ir <- mem[0x00000150]
+tick=0025 phase=execute pc=0x00000150 ir=0x00450313 addi t1, a0, 4           | t1 <- 0x00020004; pc <- 0x00000154
+tick=0026 phase=fetch   pc=0x00000154 ir=0x00ff0f37 lui t5, 4080             | ir <- mem[0x00000154]
+tick=0027 phase=execute pc=0x00000154 ir=0x00ff0f37 lui t5, 4080             | t5 <- 0x00ff0000; pc <- 0x00000158
+tick=0028 phase=fetch   pc=0x00000158 ir=0x008f0f13 addi t5, t5, 8           | ir <- mem[0x00000158]
+tick=0029 phase=execute pc=0x00000158 ir=0x008f0f13 addi t5, t5, 8           | t5 <- 0x00ff0008; pc <- 0x0000015c
+tick=0030 phase=fetch   pc=0x0000015c ir=0x00028c63 beq t0, x0, 24           | ir <- mem[0x0000015c]
+tick=0031 phase=execute pc=0x0000015c ir=0x00028c63 beq t0, x0, 24           | branch unit: rs1=0x00000005, rs2=0x00000000, take_branch=not taken; alu_target=0x00000174; pc <- 0x00000160
+tick=0032 phase=fetch   pc=0x00000160 ir=0x00032f83 lw t6, 0(t1)             | ir <- mem[0x00000160]
+tick=0033 phase=execute pc=0x00000160 ir=0x00032f83 lw t6, 0(t1)             | mem[0x00020004] -> 0x00000048; t6 <- 0x00000048; pc <- 0x00000164
+tick=0034 phase=fetch   pc=0x00000164 ir=0x01ff2023 sw t6, 0(t5)             | ir <- mem[0x00000164]
+tick=0035 phase=execute pc=0x00000164 ir=0x01ff2023 sw t6, 0(t5)             | mem[0x00ff0008] <- 0x00000048; pc <- 0x00000168
+tick=0036 phase=fetch   pc=0x00000168 ir=0x00430313 addi t1, t1, 4           | ir <- mem[0x00000168]
+tick=0037 phase=execute pc=0x00000168 ir=0x00430313 addi t1, t1, 4           | t1 <- 0x00020008; pc <- 0x0000016c
+tick=0038 phase=fetch   pc=0x0000016c ir=0xfff28293 addi t0, t0, -1          | ir <- mem[0x0000016c]
+tick=0039 phase=execute pc=0x0000016c ir=0xfff28293 addi t0, t0, -1          | t0 <- 0x00000004; pc <- 0x00000170
+tick=0040 phase=fetch   pc=0x00000170 ir=0xfedff06f jal x0, -20              | ir <- mem[0x00000170]
+tick=0041 phase=execute pc=0x00000170 ir=0xfedff06f jal x0, -20              | x0 write discarded; pc <- 0x0000015c
+tick=0042 phase=fetch   pc=0x0000015c ir=0x00028c63 beq t0, x0, 24           | ir <- mem[0x0000015c]
+tick=0043 phase=execute pc=0x0000015c ir=0x00028c63 beq t0, x0, 24           | branch unit: rs1=0x00000004, rs2=0x00000000, take_branch=not taken; alu_target=0x00000174; pc <- 0x00000160
+tick=0044 phase=fetch   pc=0x00000160 ir=0x00032f83 lw t6, 0(t1)             | ir <- mem[0x00000160]
+tick=0045 phase=execute pc=0x00000160 ir=0x00032f83 lw t6, 0(t1)             | mem[0x00020008] -> 0x00000065; t6 <- 0x00000065; pc <- 0x00000164
+tick=0046 phase=fetch   pc=0x00000164 ir=0x01ff2023 sw t6, 0(t5)             | ir <- mem[0x00000164]
+tick=0047 phase=execute pc=0x00000164 ir=0x01ff2023 sw t6, 0(t5)             | mem[0x00ff0008] <- 0x00000065; pc <- 0x00000168
+tick=0048 phase=fetch   pc=0x00000168 ir=0x00430313 addi t1, t1, 4           | ir <- mem[0x00000168]
+tick=0049 phase=execute pc=0x00000168 ir=0x00430313 addi t1, t1, 4           | t1 <- 0x0002000c; pc <- 0x0000016c
+tick=0050 phase=fetch   pc=0x0000016c ir=0xfff28293 addi t0, t0, -1          | ir <- mem[0x0000016c]
+tick=0051 phase=execute pc=0x0000016c ir=0xfff28293 addi t0, t0, -1          | t0 <- 0x00000003; pc <- 0x00000170
+tick=0052 phase=fetch   pc=0x00000170 ir=0xfedff06f jal x0, -20              | ir <- mem[0x00000170]
+tick=0053 phase=execute pc=0x00000170 ir=0xfedff06f jal x0, -20              | x0 write discarded; pc <- 0x0000015c
+tick=0054 phase=fetch   pc=0x0000015c ir=0x00028c63 beq t0, x0, 24           | ir <- mem[0x0000015c]
+tick=0055 phase=execute pc=0x0000015c ir=0x00028c63 beq t0, x0, 24           | branch unit: rs1=0x00000003, rs2=0x00000000, take_branch=not taken; alu_target=0x00000174; pc <- 0x00000160
+tick=0056 phase=fetch   pc=0x00000160 ir=0x00032f83 lw t6, 0(t1)             | ir <- mem[0x00000160]
+tick=0057 phase=execute pc=0x00000160 ir=0x00032f83 lw t6, 0(t1)             | mem[0x0002000c] -> 0x0000006c; t6 <- 0x0000006c; pc <- 0x00000164
+tick=0058 phase=fetch   pc=0x00000164 ir=0x01ff2023 sw t6, 0(t5)             | ir <- mem[0x00000164]
+tick=0059 phase=execute pc=0x00000164 ir=0x01ff2023 sw t6, 0(t5)             | mem[0x00ff0008] <- 0x0000006c; pc <- 0x00000168
+tick=0060 phase=fetch   pc=0x00000168 ir=0x00430313 addi t1, t1, 4           | ir <- mem[0x00000168]
+tick=0061 phase=execute pc=0x00000168 ir=0x00430313 addi t1, t1, 4           | t1 <- 0x00020010; pc <- 0x0000016c
+tick=0062 phase=fetch   pc=0x0000016c ir=0xfff28293 addi t0, t0, -1          | ir <- mem[0x0000016c]
+tick=0063 phase=execute pc=0x0000016c ir=0xfff28293 addi t0, t0, -1          | t0 <- 0x00000002; pc <- 0x00000170
+tick=0064 phase=fetch   pc=0x00000170 ir=0xfedff06f jal x0, -20              | ir <- mem[0x00000170]
+tick=0065 phase=execute pc=0x00000170 ir=0xfedff06f jal x0, -20              | x0 write discarded; pc <- 0x0000015c
+tick=0066 phase=fetch   pc=0x0000015c ir=0x00028c63 beq t0, x0, 24           | ir <- mem[0x0000015c]
+tick=0067 phase=execute pc=0x0000015c ir=0x00028c63 beq t0, x0, 24           | branch unit: rs1=0x00000002, rs2=0x00000000, take_branch=not taken; alu_target=0x00000174; pc <- 0x00000160
+tick=0068 phase=fetch   pc=0x00000160 ir=0x00032f83 lw t6, 0(t1)             | ir <- mem[0x00000160]
+tick=0069 phase=execute pc=0x00000160 ir=0x00032f83 lw t6, 0(t1)             | mem[0x00020010] -> 0x0000006c; t6 <- 0x0000006c; pc <- 0x00000164
+tick=0070 phase=fetch   pc=0x00000164 ir=0x01ff2023 sw t6, 0(t5)             | ir <- mem[0x00000164]
+tick=0071 phase=execute pc=0x00000164 ir=0x01ff2023 sw t6, 0(t5)             | mem[0x00ff0008] <- 0x0000006c; pc <- 0x00000168
+tick=0072 phase=fetch   pc=0x00000168 ir=0x00430313 addi t1, t1, 4           | ir <- mem[0x00000168]
+tick=0073 phase=execute pc=0x00000168 ir=0x00430313 addi t1, t1, 4           | t1 <- 0x00020014; pc <- 0x0000016c
+tick=0074 phase=fetch   pc=0x0000016c ir=0xfff28293 addi t0, t0, -1          | ir <- mem[0x0000016c]
+tick=0075 phase=execute pc=0x0000016c ir=0xfff28293 addi t0, t0, -1          | t0 <- 0x00000001; pc <- 0x00000170
+tick=0076 phase=fetch   pc=0x00000170 ir=0xfedff06f jal x0, -20              | ir <- mem[0x00000170]
+tick=0077 phase=execute pc=0x00000170 ir=0xfedff06f jal x0, -20              | x0 write discarded; pc <- 0x0000015c
+tick=0078 phase=fetch   pc=0x0000015c ir=0x00028c63 beq t0, x0, 24           | ir <- mem[0x0000015c]
+tick=0079 phase=execute pc=0x0000015c ir=0x00028c63 beq t0, x0, 24           | branch unit: rs1=0x00000001, rs2=0x00000000, take_branch=not taken; alu_target=0x00000174; pc <- 0x00000160
+tick=0080 phase=fetch   pc=0x00000160 ir=0x00032f83 lw t6, 0(t1)             | ir <- mem[0x00000160]
+tick=0081 phase=execute pc=0x00000160 ir=0x00032f83 lw t6, 0(t1)             | mem[0x00020014] -> 0x0000006f; t6 <- 0x0000006f; pc <- 0x00000164
+tick=0082 phase=fetch   pc=0x00000164 ir=0x01ff2023 sw t6, 0(t5)             | ir <- mem[0x00000164]
+tick=0083 phase=execute pc=0x00000164 ir=0x01ff2023 sw t6, 0(t5)             | mem[0x00ff0008] <- 0x0000006f; pc <- 0x00000168
+tick=0084 phase=fetch   pc=0x00000168 ir=0x00430313 addi t1, t1, 4           | ir <- mem[0x00000168]
+tick=0085 phase=execute pc=0x00000168 ir=0x00430313 addi t1, t1, 4           | t1 <- 0x00020018; pc <- 0x0000016c
+tick=0086 phase=fetch   pc=0x0000016c ir=0xfff28293 addi t0, t0, -1          | ir <- mem[0x0000016c]
+tick=0087 phase=execute pc=0x0000016c ir=0xfff28293 addi t0, t0, -1          | t0 <- 0x00000000; pc <- 0x00000170
+tick=0088 phase=fetch   pc=0x00000170 ir=0xfedff06f jal x0, -20              | ir <- mem[0x00000170]
+tick=0089 phase=execute pc=0x00000170 ir=0xfedff06f jal x0, -20              | x0 write discarded; pc <- 0x0000015c
+tick=0090 phase=fetch   pc=0x0000015c ir=0x00028c63 beq t0, x0, 24           | ir <- mem[0x0000015c]
+tick=0091 phase=execute pc=0x0000015c ir=0x00028c63 beq t0, x0, 24           | branch unit: rs1=0x00000000, rs2=0x00000000, take_branch=taken; alu_target=0x00000174; pc <- 0x00000174
+tick=0092 phase=fetch   pc=0x00000174 ir=0x00012503 lw a0, 0(sp)             | ir <- mem[0x00000174]
+tick=0093 phase=execute pc=0x00000174 ir=0x00012503 lw a0, 0(sp)             | mem[0x000efffc] -> 0x00020000; a0 <- 0x00020000; pc <- 0x00000178
+tick=0094 phase=fetch   pc=0x00000178 ir=0x00410113 addi sp, sp, 4           | ir <- mem[0x00000178]
+tick=0095 phase=execute pc=0x00000178 ir=0x00410113 addi sp, sp, 4           | sp <- 0x000f0000; pc <- 0x0000017c
+tick=0096 phase=fetch   pc=0x0000017c ir=0x00008067 jalr x0, 0(ra)           | ir <- mem[0x0000017c]
+tick=0097 phase=execute pc=0x0000017c ir=0x00008067 jalr x0, 0(ra)           | x0 write discarded; pc <- 0x00000024
+tick=0098 phase=fetch   pc=0x00000024 ir=0x00020537 lui a0, 32               | ir <- mem[0x00000024]
+tick=0099 phase=execute pc=0x00000024 ir=0x00020537 lui a0, 32               | a0 <- 0x00020000; pc <- 0x00000028
+tick=0100 phase=fetch   pc=0x00000028 ir=0x01c50513 addi a0, a0, 28          | ir <- mem[0x00000028]
+tick=0101 phase=execute pc=0x00000028 ir=0x01c50513 addi a0, a0, 28          | a0 <- 0x0002001c; pc <- 0x0000002c
+tick=0102 phase=fetch   pc=0x0000002c ir=0x118000ef jal ra, 280              | ir <- mem[0x0000002c]
+tick=0103 phase=execute pc=0x0000002c ir=0x118000ef jal ra, 280              | ra <- 0x00000030; pc <- 0x00000144
+tick=0104 phase=fetch   pc=0x00000144 ir=0xffc10113 addi sp, sp, -4          | ir <- mem[0x00000144]
+tick=0105 phase=execute pc=0x00000144 ir=0xffc10113 addi sp, sp, -4          | sp <- 0x000efffc; pc <- 0x00000148
+tick=0106 phase=fetch   pc=0x00000148 ir=0x00a12023 sw a0, 0(sp)             | ir <- mem[0x00000148]
+tick=0107 phase=execute pc=0x00000148 ir=0x00a12023 sw a0, 0(sp)             | mem[0x000efffc] <- 0x0002001c; pc <- 0x0000014c
+tick=0108 phase=fetch   pc=0x0000014c ir=0x00052283 lw t0, 0(a0)             | ir <- mem[0x0000014c]
+tick=0109 phase=execute pc=0x0000014c ir=0x00052283 lw t0, 0(a0)             | mem[0x0002001c] -> 0x00000001; t0 <- 0x00000001; pc <- 0x00000150
+tick=0110 phase=fetch   pc=0x00000150 ir=0x00450313 addi t1, a0, 4           | ir <- mem[0x00000150]
+tick=0111 phase=execute pc=0x00000150 ir=0x00450313 addi t1, a0, 4           | t1 <- 0x00020020; pc <- 0x00000154
+tick=0112 phase=fetch   pc=0x00000154 ir=0x00ff0f37 lui t5, 4080             | ir <- mem[0x00000154]
+tick=0113 phase=execute pc=0x00000154 ir=0x00ff0f37 lui t5, 4080             | t5 <- 0x00ff0000; pc <- 0x00000158
+tick=0114 phase=fetch   pc=0x00000158 ir=0x008f0f13 addi t5, t5, 8           | ir <- mem[0x00000158]
+tick=0115 phase=execute pc=0x00000158 ir=0x008f0f13 addi t5, t5, 8           | t5 <- 0x00ff0008; pc <- 0x0000015c
+tick=0116 phase=fetch   pc=0x0000015c ir=0x00028c63 beq t0, x0, 24           | ir <- mem[0x0000015c]
+tick=0117 phase=execute pc=0x0000015c ir=0x00028c63 beq t0, x0, 24           | branch unit: rs1=0x00000001, rs2=0x00000000, take_branch=not taken; alu_target=0x00000174; pc <- 0x00000160
+tick=0118 phase=fetch   pc=0x00000160 ir=0x00032f83 lw t6, 0(t1)             | ir <- mem[0x00000160]
+tick=0119 phase=execute pc=0x00000160 ir=0x00032f83 lw t6, 0(t1)             | mem[0x00020020] -> 0x0000000a; t6 <- 0x0000000a; pc <- 0x00000164
+tick=0120 phase=fetch   pc=0x00000164 ir=0x01ff2023 sw t6, 0(t5)             | ir <- mem[0x00000164]
+tick=0121 phase=execute pc=0x00000164 ir=0x01ff2023 sw t6, 0(t5)             | mem[0x00ff0008] <- 0x0000000a; pc <- 0x00000168
+tick=0122 phase=fetch   pc=0x00000168 ir=0x00430313 addi t1, t1, 4           | ir <- mem[0x00000168]
+tick=0123 phase=execute pc=0x00000168 ir=0x00430313 addi t1, t1, 4           | t1 <- 0x00020024; pc <- 0x0000016c
+tick=0124 phase=fetch   pc=0x0000016c ir=0xfff28293 addi t0, t0, -1          | ir <- mem[0x0000016c]
+tick=0125 phase=execute pc=0x0000016c ir=0xfff28293 addi t0, t0, -1          | t0 <- 0x00000000; pc <- 0x00000170
+tick=0126 phase=fetch   pc=0x00000170 ir=0xfedff06f jal x0, -20              | ir <- mem[0x00000170]
+tick=0127 phase=execute pc=0x00000170 ir=0xfedff06f jal x0, -20              | x0 write discarded; pc <- 0x0000015c
+tick=0128 phase=fetch   pc=0x0000015c ir=0x00028c63 beq t0, x0, 24           | ir <- mem[0x0000015c]
+tick=0129 phase=execute pc=0x0000015c ir=0x00028c63 beq t0, x0, 24           | branch unit: rs1=0x00000000, rs2=0x00000000, take_branch=taken; alu_target=0x00000174; pc <- 0x00000174
+tick=0130 phase=fetch   pc=0x00000174 ir=0x00012503 lw a0, 0(sp)             | ir <- mem[0x00000174]
+tick=0131 phase=execute pc=0x00000174 ir=0x00012503 lw a0, 0(sp)             | mem[0x000efffc] -> 0x0002001c; a0 <- 0x0002001c; pc <- 0x00000178
+tick=0132 phase=fetch   pc=0x00000178 ir=0x00410113 addi sp, sp, 4           | ir <- mem[0x00000178]
+tick=0133 phase=execute pc=0x00000178 ir=0x00410113 addi sp, sp, 4           | sp <- 0x000f0000; pc <- 0x0000017c
+tick=0134 phase=fetch   pc=0x0000017c ir=0x00008067 jalr x0, 0(ra)           | ir <- mem[0x0000017c]
+tick=0135 phase=execute pc=0x0000017c ir=0x00008067 jalr x0, 0(ra)           | x0 write discarded; pc <- 0x00000030
+tick=0136 phase=fetch   pc=0x00000030 ir=0x00020537 lui a0, 32               | ir <- mem[0x00000030]
+tick=0137 phase=execute pc=0x00000030 ir=0x00020537 lui a0, 32               | a0 <- 0x00020000; pc <- 0x00000034
+tick=0138 phase=fetch   pc=0x00000034 ir=0x01850513 addi a0, a0, 24          | ir <- mem[0x00000034]
+tick=0139 phase=execute pc=0x00000034 ir=0x01850513 addi a0, a0, 24          | a0 <- 0x00020018; pc <- 0x00000038
+tick=0140 phase=fetch   pc=0x00000038 ir=0x00052503 lw a0, 0(a0)             | ir <- mem[0x00000038]
+tick=0141 phase=execute pc=0x00000038 ir=0x00052503 lw a0, 0(a0)             | mem[0x00020018] -> 0x00020000; a0 <- 0x00020000; pc <- 0x0000003c
+tick=0142 phase=fetch   pc=0x0000003c ir=0x00052503 lw a0, 0(a0)             | ir <- mem[0x0000003c]
+tick=0143 phase=execute pc=0x0000003c ir=0x00052503 lw a0, 0(a0)             | mem[0x00020000] -> 0x00000005; a0 <- 0x00000005; pc <- 0x00000040
+tick=0144 phase=fetch   pc=0x00000040 ir=0x074000ef jal ra, 116              | ir <- mem[0x00000040]
+tick=0145 phase=execute pc=0x00000040 ir=0x074000ef jal ra, 116              | ra <- 0x00000044; pc <- 0x000000b4
+tick=0146 phase=fetch   pc=0x000000b4 ir=0xffc10113 addi sp, sp, -4          | ir <- mem[0x000000b4]
+tick=0147 phase=execute pc=0x000000b4 ir=0xffc10113 addi sp, sp, -4          | sp <- 0x000efffc; pc <- 0x000000b8
+tick=0148 phase=fetch   pc=0x000000b8 ir=0x00a12023 sw a0, 0(sp)             | ir <- mem[0x000000b8]
+tick=0149 phase=execute pc=0x000000b8 ir=0x00a12023 sw a0, 0(sp)             | mem[0x000efffc] <- 0x00000005; pc <- 0x000000bc
+tick=0150 phase=fetch   pc=0x000000bc ir=0x00054463 blt a0, x0, 8            | ir <- mem[0x000000bc]
+tick=0151 phase=execute pc=0x000000bc ir=0x00054463 blt a0, x0, 8            | branch unit: rs1=0x00000005, rs2=0x00000000, take_branch=not taken; alu_target=0x000000c4; pc <- 0x000000c0
+tick=0152 phase=fetch   pc=0x000000c0 ir=0x0180006f jal x0, 24               | ir <- mem[0x000000c0]
+tick=0153 phase=execute pc=0x000000c0 ir=0x0180006f jal x0, 24               | x0 write discarded; pc <- 0x000000d8
+tick=0154 phase=fetch   pc=0x000000d8 ir=0x04050863 beq a0, x0, 80           | ir <- mem[0x000000d8]
+tick=0155 phase=execute pc=0x000000d8 ir=0x04050863 beq a0, x0, 80           | branch unit: rs1=0x00000005, rs2=0x00000000, take_branch=not taken; alu_target=0x00000128; pc <- 0x000000dc
+tick=0156 phase=fetch   pc=0x000000dc ir=0x00000313 addi t1, x0, 0           | ir <- mem[0x000000dc]
+tick=0157 phase=execute pc=0x000000dc ir=0x00000313 addi t1, x0, 0           | t1 <- 0x00000000; pc <- 0x000000e0
+tick=0158 phase=fetch   pc=0x000000e0 ir=0x00a00393 addi t2, x0, 10          | ir <- mem[0x000000e0]
+tick=0159 phase=execute pc=0x000000e0 ir=0x00a00393 addi t2, x0, 10          | t2 <- 0x0000000a; pc <- 0x000000e4
+tick=0160 phase=fetch   pc=0x000000e4 ir=0x02754e33 div t3, a0, t2           | ir <- mem[0x000000e4]
+tick=0161 phase=execute pc=0x000000e4 ir=0x02754e33 div t3, a0, t2           | t3 <- 0x00000000; pc <- 0x000000e8
+tick=0162 phase=fetch   pc=0x000000e8 ir=0x02756eb3 rem t4, a0, t2           | ir <- mem[0x000000e8]
+tick=0163 phase=execute pc=0x000000e8 ir=0x02756eb3 rem t4, a0, t2           | t4 <- 0x00000005; pc <- 0x000000ec
+tick=0164 phase=fetch   pc=0x000000ec ir=0xffc10113 addi sp, sp, -4          | ir <- mem[0x000000ec]
+tick=0165 phase=execute pc=0x000000ec ir=0xffc10113 addi sp, sp, -4          | sp <- 0x000efff8; pc <- 0x000000f0
+tick=0166 phase=fetch   pc=0x000000f0 ir=0x01d12023 sw t4, 0(sp)             | ir <- mem[0x000000f0]
+tick=0167 phase=execute pc=0x000000f0 ir=0x01d12023 sw t4, 0(sp)             | mem[0x000efff8] <- 0x00000005; pc <- 0x000000f4
+tick=0168 phase=fetch   pc=0x000000f4 ir=0x00130313 addi t1, t1, 1           | ir <- mem[0x000000f4]
+tick=0169 phase=execute pc=0x000000f4 ir=0x00130313 addi t1, t1, 1           | t1 <- 0x00000001; pc <- 0x000000f8
+tick=0170 phase=fetch   pc=0x000000f8 ir=0x000e0513 addi a0, t3, 0           | ir <- mem[0x000000f8]
+tick=0171 phase=execute pc=0x000000f8 ir=0x000e0513 addi a0, t3, 0           | a0 <- 0x00000000; pc <- 0x000000fc
+tick=0172 phase=fetch   pc=0x000000fc ir=0xfe0514e3 bne a0, x0, -24          | ir <- mem[0x000000fc]
+tick=0173 phase=execute pc=0x000000fc ir=0xfe0514e3 bne a0, x0, -24          | branch unit: rs1=0x00000000, rs2=0x00000000, take_branch=not taken; alu_target=0x000000e4; pc <- 0x00000100
+tick=0174 phase=fetch   pc=0x00000100 ir=0x00ff0f37 lui t5, 4080             | ir <- mem[0x00000100]
+tick=0175 phase=execute pc=0x00000100 ir=0x00ff0f37 lui t5, 4080             | t5 <- 0x00ff0000; pc <- 0x00000104
+tick=0176 phase=fetch   pc=0x00000104 ir=0x008f0f13 addi t5, t5, 8           | ir <- mem[0x00000104]
+tick=0177 phase=execute pc=0x00000104 ir=0x008f0f13 addi t5, t5, 8           | t5 <- 0x00ff0008; pc <- 0x00000108
+tick=0178 phase=fetch   pc=0x00000108 ir=0x03000f93 addi t6, x0, 48          | ir <- mem[0x00000108]
+tick=0179 phase=execute pc=0x00000108 ir=0x03000f93 addi t6, x0, 48          | t6 <- 0x00000030; pc <- 0x0000010c
+tick=0180 phase=fetch   pc=0x0000010c ir=0x00012503 lw a0, 0(sp)             | ir <- mem[0x0000010c]
+tick=0181 phase=execute pc=0x0000010c ir=0x00012503 lw a0, 0(sp)             | mem[0x000efff8] -> 0x00000005; a0 <- 0x00000005; pc <- 0x00000110
+tick=0182 phase=fetch   pc=0x00000110 ir=0x00410113 addi sp, sp, 4           | ir <- mem[0x00000110]
+tick=0183 phase=execute pc=0x00000110 ir=0x00410113 addi sp, sp, 4           | sp <- 0x000efffc; pc <- 0x00000114
+tick=0184 phase=fetch   pc=0x00000114 ir=0x01f50533 add a0, a0, t6           | ir <- mem[0x00000114]
+tick=0185 phase=execute pc=0x00000114 ir=0x01f50533 add a0, a0, t6           | a0 <- 0x00000035; pc <- 0x00000118
+tick=0186 phase=fetch   pc=0x00000118 ir=0x00af2023 sw a0, 0(t5)             | ir <- mem[0x00000118]
+tick=0187 phase=execute pc=0x00000118 ir=0x00af2023 sw a0, 0(t5)             | mem[0x00ff0008] <- 0x00000035; pc <- 0x0000011c
+tick=0188 phase=fetch   pc=0x0000011c ir=0xfff30313 addi t1, t1, -1          | ir <- mem[0x0000011c]
+tick=0189 phase=execute pc=0x0000011c ir=0xfff30313 addi t1, t1, -1          | t1 <- 0x00000000; pc <- 0x00000120
+tick=0190 phase=fetch   pc=0x00000120 ir=0xfe0316e3 bne t1, x0, -20          | ir <- mem[0x00000120]
+tick=0191 phase=execute pc=0x00000120 ir=0xfe0316e3 bne t1, x0, -20          | branch unit: rs1=0x00000000, rs2=0x00000000, take_branch=not taken; alu_target=0x0000010c; pc <- 0x00000124
+tick=0192 phase=fetch   pc=0x00000124 ir=0x0140006f jal x0, 20               | ir <- mem[0x00000124]
+tick=0193 phase=execute pc=0x00000124 ir=0x0140006f jal x0, 20               | x0 write discarded; pc <- 0x00000138
+tick=0194 phase=fetch   pc=0x00000138 ir=0x00012503 lw a0, 0(sp)             | ir <- mem[0x00000138]
+tick=0195 phase=execute pc=0x00000138 ir=0x00012503 lw a0, 0(sp)             | mem[0x000efffc] -> 0x00000005; a0 <- 0x00000005; pc <- 0x0000013c
+tick=0196 phase=fetch   pc=0x0000013c ir=0x00410113 addi sp, sp, 4           | ir <- mem[0x0000013c]
+tick=0197 phase=execute pc=0x0000013c ir=0x00410113 addi sp, sp, 4           | sp <- 0x000f0000; pc <- 0x00000140
+tick=0198 phase=fetch   pc=0x00000140 ir=0x00008067 jalr x0, 0(ra)           | ir <- mem[0x00000140]
+tick=0199 phase=execute pc=0x00000140 ir=0x00008067 jalr x0, 0(ra)           | x0 write discarded; pc <- 0x00000044
+tick=0200 phase=fetch   pc=0x00000044 ir=0x00020537 lui a0, 32               | ir <- mem[0x00000044]
+tick=0201 phase=execute pc=0x00000044 ir=0x00020537 lui a0, 32               | a0 <- 0x00020000; pc <- 0x00000048
+tick=0202 phase=fetch   pc=0x00000048 ir=0x01c50513 addi a0, a0, 28          | ir <- mem[0x00000048]
+tick=0203 phase=execute pc=0x00000048 ir=0x01c50513 addi a0, a0, 28          | a0 <- 0x0002001c; pc <- 0x0000004c
+tick=0204 phase=fetch   pc=0x0000004c ir=0x0f8000ef jal ra, 248              | ir <- mem[0x0000004c]
+tick=0205 phase=execute pc=0x0000004c ir=0x0f8000ef jal ra, 248              | ra <- 0x00000050; pc <- 0x00000144
+tick=0206 phase=fetch   pc=0x00000144 ir=0xffc10113 addi sp, sp, -4          | ir <- mem[0x00000144]
+tick=0207 phase=execute pc=0x00000144 ir=0xffc10113 addi sp, sp, -4          | sp <- 0x000efffc; pc <- 0x00000148
+tick=0208 phase=fetch   pc=0x00000148 ir=0x00a12023 sw a0, 0(sp)             | ir <- mem[0x00000148]
+tick=0209 phase=execute pc=0x00000148 ir=0x00a12023 sw a0, 0(sp)             | mem[0x000efffc] <- 0x0002001c; pc <- 0x0000014c
+tick=0210 phase=fetch   pc=0x0000014c ir=0x00052283 lw t0, 0(a0)             | ir <- mem[0x0000014c]
+tick=0211 phase=execute pc=0x0000014c ir=0x00052283 lw t0, 0(a0)             | mem[0x0002001c] -> 0x00000001; t0 <- 0x00000001; pc <- 0x00000150
+tick=0212 phase=fetch   pc=0x00000150 ir=0x00450313 addi t1, a0, 4           | ir <- mem[0x00000150]
+tick=0213 phase=execute pc=0x00000150 ir=0x00450313 addi t1, a0, 4           | t1 <- 0x00020020; pc <- 0x00000154
+tick=0214 phase=fetch   pc=0x00000154 ir=0x00ff0f37 lui t5, 4080             | ir <- mem[0x00000154]
+tick=0215 phase=execute pc=0x00000154 ir=0x00ff0f37 lui t5, 4080             | t5 <- 0x00ff0000; pc <- 0x00000158
+tick=0216 phase=fetch   pc=0x00000158 ir=0x008f0f13 addi t5, t5, 8           | ir <- mem[0x00000158]
+tick=0217 phase=execute pc=0x00000158 ir=0x008f0f13 addi t5, t5, 8           | t5 <- 0x00ff0008; pc <- 0x0000015c
+tick=0218 phase=fetch   pc=0x0000015c ir=0x00028c63 beq t0, x0, 24           | ir <- mem[0x0000015c]
+tick=0219 phase=execute pc=0x0000015c ir=0x00028c63 beq t0, x0, 24           | branch unit: rs1=0x00000001, rs2=0x00000000, take_branch=not taken; alu_target=0x00000174; pc <- 0x00000160
+tick=0220 phase=fetch   pc=0x00000160 ir=0x00032f83 lw t6, 0(t1)             | ir <- mem[0x00000160]
+tick=0221 phase=execute pc=0x00000160 ir=0x00032f83 lw t6, 0(t1)             | mem[0x00020020] -> 0x0000000a; t6 <- 0x0000000a; pc <- 0x00000164
+tick=0222 phase=fetch   pc=0x00000164 ir=0x01ff2023 sw t6, 0(t5)             | ir <- mem[0x00000164]
+tick=0223 phase=execute pc=0x00000164 ir=0x01ff2023 sw t6, 0(t5)             | mem[0x00ff0008] <- 0x0000000a; pc <- 0x00000168
+tick=0224 phase=fetch   pc=0x00000168 ir=0x00430313 addi t1, t1, 4           | ir <- mem[0x00000168]
+tick=0225 phase=execute pc=0x00000168 ir=0x00430313 addi t1, t1, 4           | t1 <- 0x00020024; pc <- 0x0000016c
+tick=0226 phase=fetch   pc=0x0000016c ir=0xfff28293 addi t0, t0, -1          | ir <- mem[0x0000016c]
+tick=0227 phase=execute pc=0x0000016c ir=0xfff28293 addi t0, t0, -1          | t0 <- 0x00000000; pc <- 0x00000170
+tick=0228 phase=fetch   pc=0x00000170 ir=0xfedff06f jal x0, -20              | ir <- mem[0x00000170]
+tick=0229 phase=execute pc=0x00000170 ir=0xfedff06f jal x0, -20              | x0 write discarded; pc <- 0x0000015c
+tick=0230 phase=fetch   pc=0x0000015c ir=0x00028c63 beq t0, x0, 24           | ir <- mem[0x0000015c]
+tick=0231 phase=execute pc=0x0000015c ir=0x00028c63 beq t0, x0, 24           | branch unit: rs1=0x00000000, rs2=0x00000000, take_branch=taken; alu_target=0x00000174; pc <- 0x00000174
+tick=0232 phase=fetch   pc=0x00000174 ir=0x00012503 lw a0, 0(sp)             | ir <- mem[0x00000174]
+tick=0233 phase=execute pc=0x00000174 ir=0x00012503 lw a0, 0(sp)             | mem[0x000efffc] -> 0x0002001c; a0 <- 0x0002001c; pc <- 0x00000178
+tick=0234 phase=fetch   pc=0x00000178 ir=0x00410113 addi sp, sp, 4           | ir <- mem[0x00000178]
+tick=0235 phase=execute pc=0x00000178 ir=0x00410113 addi sp, sp, 4           | sp <- 0x000f0000; pc <- 0x0000017c
+tick=0236 phase=fetch   pc=0x0000017c ir=0x00008067 jalr x0, 0(ra)           | ir <- mem[0x0000017c]
+tick=0237 phase=execute pc=0x0000017c ir=0x00008067 jalr x0, 0(ra)           | x0 write discarded; pc <- 0x00000050
+tick=0238 phase=fetch   pc=0x00000050 ir=0x000202b7 lui t0, 32               | ir <- mem[0x00000050]
+tick=0239 phase=execute pc=0x00000050 ir=0x000202b7 lui t0, 32               | t0 <- 0x00020000; pc <- 0x00000054
+tick=0240 phase=fetch   pc=0x00000054 ir=0x01828293 addi t0, t0, 24          | ir <- mem[0x00000054]
+tick=0241 phase=execute pc=0x00000054 ir=0x01828293 addi t0, t0, 24          | t0 <- 0x00020018; pc <- 0x00000058
+tick=0242 phase=fetch   pc=0x00000058 ir=0x0002a283 lw t0, 0(t0)             | ir <- mem[0x00000058]
+tick=0243 phase=execute pc=0x00000058 ir=0x0002a283 lw t0, 0(t0)             | mem[0x00020018] -> 0x00020000; t0 <- 0x00020000; pc <- 0x0000005c
+tick=0244 phase=fetch   pc=0x0000005c ir=0xffc10113 addi sp, sp, -4          | ir <- mem[0x0000005c]
+tick=0245 phase=execute pc=0x0000005c ir=0xffc10113 addi sp, sp, -4          | sp <- 0x000efffc; pc <- 0x00000060
+tick=0246 phase=fetch   pc=0x00000060 ir=0x00512023 sw t0, 0(sp)             | ir <- mem[0x00000060]
+tick=0247 phase=execute pc=0x00000060 ir=0x00512023 sw t0, 0(sp)             | mem[0x000efffc] <- 0x00020000; pc <- 0x00000064
+tick=0248 phase=fetch   pc=0x00000064 ir=0x00000313 addi t1, x0, 0           | ir <- mem[0x00000064]
+tick=0249 phase=execute pc=0x00000064 ir=0x00000313 addi t1, x0, 0           | t1 <- 0x00000000; pc <- 0x00000068
+tick=0250 phase=fetch   pc=0x00000068 ir=0xffc10113 addi sp, sp, -4          | ir <- mem[0x00000068]
+tick=0251 phase=execute pc=0x00000068 ir=0xffc10113 addi sp, sp, -4          | sp <- 0x000efff8; pc <- 0x0000006c
+tick=0252 phase=fetch   pc=0x0000006c ir=0x00612023 sw t1, 0(sp)             | ir <- mem[0x0000006c]
+tick=0253 phase=execute pc=0x0000006c ir=0x00612023 sw t1, 0(sp)             | mem[0x000efff8] <- 0x00000000; pc <- 0x00000070
+tick=0254 phase=fetch   pc=0x00000070 ir=0x05900393 addi t2, x0, 89          | ir <- mem[0x00000070]
+tick=0255 phase=execute pc=0x00000070 ir=0x05900393 addi t2, x0, 89          | t2 <- 0x00000059; pc <- 0x00000074
+tick=0256 phase=fetch   pc=0x00000074 ir=0x00012303 lw t1, 0(sp)             | ir <- mem[0x00000074]
+tick=0257 phase=execute pc=0x00000074 ir=0x00012303 lw t1, 0(sp)             | mem[0x000efff8] -> 0x00000000; t1 <- 0x00000000; pc <- 0x00000078
+tick=0258 phase=fetch   pc=0x00000078 ir=0x00410113 addi sp, sp, 4           | ir <- mem[0x00000078]
+tick=0259 phase=execute pc=0x00000078 ir=0x00410113 addi sp, sp, 4           | sp <- 0x000efffc; pc <- 0x0000007c
+tick=0260 phase=fetch   pc=0x0000007c ir=0x00012283 lw t0, 0(sp)             | ir <- mem[0x0000007c]
+tick=0261 phase=execute pc=0x0000007c ir=0x00012283 lw t0, 0(sp)             | mem[0x000efffc] -> 0x00020000; t0 <- 0x00020000; pc <- 0x00000080
+tick=0262 phase=fetch   pc=0x00000080 ir=0x00410113 addi sp, sp, 4           | ir <- mem[0x00000080]
+tick=0263 phase=execute pc=0x00000080 ir=0x00410113 addi sp, sp, 4           | sp <- 0x000f0000; pc <- 0x00000084
+tick=0264 phase=fetch   pc=0x00000084 ir=0x00200e13 addi t3, x0, 2           | ir <- mem[0x00000084]
+tick=0265 phase=execute pc=0x00000084 ir=0x00200e13 addi t3, x0, 2           | t3 <- 0x00000002; pc <- 0x00000088
+tick=0266 phase=fetch   pc=0x00000088 ir=0x01c31333 sll t1, t1, t3           | ir <- mem[0x00000088]
+tick=0267 phase=execute pc=0x00000088 ir=0x01c31333 sll t1, t1, t3           | t1 <- 0x00000000; pc <- 0x0000008c
+tick=0268 phase=fetch   pc=0x0000008c ir=0x00400e13 addi t3, x0, 4           | ir <- mem[0x0000008c]
+tick=0269 phase=execute pc=0x0000008c ir=0x00400e13 addi t3, x0, 4           | t3 <- 0x00000004; pc <- 0x00000090
+tick=0270 phase=fetch   pc=0x00000090 ir=0x01c30333 add t1, t1, t3           | ir <- mem[0x00000090]
+tick=0271 phase=execute pc=0x00000090 ir=0x01c30333 add t1, t1, t3           | t1 <- 0x00000004; pc <- 0x00000094
+tick=0272 phase=fetch   pc=0x00000094 ir=0x006282b3 add t0, t0, t1           | ir <- mem[0x00000094]
+tick=0273 phase=execute pc=0x00000094 ir=0x006282b3 add t0, t0, t1           | t0 <- 0x00020004; pc <- 0x00000098
+tick=0274 phase=fetch   pc=0x00000098 ir=0x0072a023 sw t2, 0(t0)             | ir <- mem[0x00000098]
+tick=0275 phase=execute pc=0x00000098 ir=0x0072a023 sw t2, 0(t0)             | mem[0x00020004] <- 0x00000059; pc <- 0x0000009c
+tick=0276 phase=fetch   pc=0x0000009c ir=0x00038513 addi a0, t2, 0           | ir <- mem[0x0000009c]
+tick=0277 phase=execute pc=0x0000009c ir=0x00038513 addi a0, t2, 0           | a0 <- 0x00000059; pc <- 0x000000a0
+tick=0278 phase=fetch   pc=0x000000a0 ir=0x00020537 lui a0, 32               | ir <- mem[0x000000a0]
+tick=0279 phase=execute pc=0x000000a0 ir=0x00020537 lui a0, 32               | a0 <- 0x00020000; pc <- 0x000000a4
+tick=0280 phase=fetch   pc=0x000000a4 ir=0x01850513 addi a0, a0, 24          | ir <- mem[0x000000a4]
+tick=0281 phase=execute pc=0x000000a4 ir=0x01850513 addi a0, a0, 24          | a0 <- 0x00020018; pc <- 0x000000a8
+tick=0282 phase=fetch   pc=0x000000a8 ir=0x00052503 lw a0, 0(a0)             | ir <- mem[0x000000a8]
+tick=0283 phase=execute pc=0x000000a8 ir=0x00052503 lw a0, 0(a0)             | mem[0x00020018] -> 0x00020000; a0 <- 0x00020000; pc <- 0x000000ac
+tick=0284 phase=fetch   pc=0x000000ac ir=0x098000ef jal ra, 152              | ir <- mem[0x000000ac]
+tick=0285 phase=execute pc=0x000000ac ir=0x098000ef jal ra, 152              | ra <- 0x000000b0; pc <- 0x00000144
+tick=0286 phase=fetch   pc=0x00000144 ir=0xffc10113 addi sp, sp, -4          | ir <- mem[0x00000144]
+tick=0287 phase=execute pc=0x00000144 ir=0xffc10113 addi sp, sp, -4          | sp <- 0x000efffc; pc <- 0x00000148
+tick=0288 phase=fetch   pc=0x00000148 ir=0x00a12023 sw a0, 0(sp)             | ir <- mem[0x00000148]
+tick=0289 phase=execute pc=0x00000148 ir=0x00a12023 sw a0, 0(sp)             | mem[0x000efffc] <- 0x00020000; pc <- 0x0000014c
+tick=0290 phase=fetch   pc=0x0000014c ir=0x00052283 lw t0, 0(a0)             | ir <- mem[0x0000014c]
+tick=0291 phase=execute pc=0x0000014c ir=0x00052283 lw t0, 0(a0)             | mem[0x00020000] -> 0x00000005; t0 <- 0x00000005; pc <- 0x00000150
+tick=0292 phase=fetch   pc=0x00000150 ir=0x00450313 addi t1, a0, 4           | ir <- mem[0x00000150]
+tick=0293 phase=execute pc=0x00000150 ir=0x00450313 addi t1, a0, 4           | t1 <- 0x00020004; pc <- 0x00000154
+tick=0294 phase=fetch   pc=0x00000154 ir=0x00ff0f37 lui t5, 4080             | ir <- mem[0x00000154]
+tick=0295 phase=execute pc=0x00000154 ir=0x00ff0f37 lui t5, 4080             | t5 <- 0x00ff0000; pc <- 0x00000158
+tick=0296 phase=fetch   pc=0x00000158 ir=0x008f0f13 addi t5, t5, 8           | ir <- mem[0x00000158]
+tick=0297 phase=execute pc=0x00000158 ir=0x008f0f13 addi t5, t5, 8           | t5 <- 0x00ff0008; pc <- 0x0000015c
+tick=0298 phase=fetch   pc=0x0000015c ir=0x00028c63 beq t0, x0, 24           | ir <- mem[0x0000015c]
+tick=0299 phase=execute pc=0x0000015c ir=0x00028c63 beq t0, x0, 24           | branch unit: rs1=0x00000005, rs2=0x00000000, take_branch=not taken; alu_target=0x00000174; pc <- 0x00000160
+tick=0300 phase=fetch   pc=0x00000160 ir=0x00032f83 lw t6, 0(t1)             | ir <- mem[0x00000160]
+tick=0301 phase=execute pc=0x00000160 ir=0x00032f83 lw t6, 0(t1)             | mem[0x00020004] -> 0x00000059; t6 <- 0x00000059; pc <- 0x00000164
+tick=0302 phase=fetch   pc=0x00000164 ir=0x01ff2023 sw t6, 0(t5)             | ir <- mem[0x00000164]
+tick=0303 phase=execute pc=0x00000164 ir=0x01ff2023 sw t6, 0(t5)             | mem[0x00ff0008] <- 0x00000059; pc <- 0x00000168
+tick=0304 phase=fetch   pc=0x00000168 ir=0x00430313 addi t1, t1, 4           | ir <- mem[0x00000168]
+tick=0305 phase=execute pc=0x00000168 ir=0x00430313 addi t1, t1, 4           | t1 <- 0x00020008; pc <- 0x0000016c
+tick=0306 phase=fetch   pc=0x0000016c ir=0xfff28293 addi t0, t0, -1          | ir <- mem[0x0000016c]
+tick=0307 phase=execute pc=0x0000016c ir=0xfff28293 addi t0, t0, -1          | t0 <- 0x00000004; pc <- 0x00000170
+tick=0308 phase=fetch   pc=0x00000170 ir=0xfedff06f jal x0, -20              | ir <- mem[0x00000170]
+tick=0309 phase=execute pc=0x00000170 ir=0xfedff06f jal x0, -20              | x0 write discarded; pc <- 0x0000015c
+tick=0310 phase=fetch   pc=0x0000015c ir=0x00028c63 beq t0, x0, 24           | ir <- mem[0x0000015c]
+tick=0311 phase=execute pc=0x0000015c ir=0x00028c63 beq t0, x0, 24           | branch unit: rs1=0x00000004, rs2=0x00000000, take_branch=not taken; alu_target=0x00000174; pc <- 0x00000160
+tick=0312 phase=fetch   pc=0x00000160 ir=0x00032f83 lw t6, 0(t1)             | ir <- mem[0x00000160]
+tick=0313 phase=execute pc=0x00000160 ir=0x00032f83 lw t6, 0(t1)             | mem[0x00020008] -> 0x00000065; t6 <- 0x00000065; pc <- 0x00000164
+tick=0314 phase=fetch   pc=0x00000164 ir=0x01ff2023 sw t6, 0(t5)             | ir <- mem[0x00000164]
+tick=0315 phase=execute pc=0x00000164 ir=0x01ff2023 sw t6, 0(t5)             | mem[0x00ff0008] <- 0x00000065; pc <- 0x00000168
+tick=0316 phase=fetch   pc=0x00000168 ir=0x00430313 addi t1, t1, 4           | ir <- mem[0x00000168]
+tick=0317 phase=execute pc=0x00000168 ir=0x00430313 addi t1, t1, 4           | t1 <- 0x0002000c; pc <- 0x0000016c
+tick=0318 phase=fetch   pc=0x0000016c ir=0xfff28293 addi t0, t0, -1          | ir <- mem[0x0000016c]
+tick=0319 phase=execute pc=0x0000016c ir=0xfff28293 addi t0, t0, -1          | t0 <- 0x00000003; pc <- 0x00000170
+tick=0320 phase=fetch   pc=0x00000170 ir=0xfedff06f jal x0, -20              | ir <- mem[0x00000170]
+tick=0321 phase=execute pc=0x00000170 ir=0xfedff06f jal x0, -20              | x0 write discarded; pc <- 0x0000015c
+tick=0322 phase=fetch   pc=0x0000015c ir=0x00028c63 beq t0, x0, 24           | ir <- mem[0x0000015c]
+tick=0323 phase=execute pc=0x0000015c ir=0x00028c63 beq t0, x0, 24           | branch unit: rs1=0x00000003, rs2=0x00000000, take_branch=not taken; alu_target=0x00000174; pc <- 0x00000160
+tick=0324 phase=fetch   pc=0x00000160 ir=0x00032f83 lw t6, 0(t1)             | ir <- mem[0x00000160]
+tick=0325 phase=execute pc=0x00000160 ir=0x00032f83 lw t6, 0(t1)             | mem[0x0002000c] -> 0x0000006c; t6 <- 0x0000006c; pc <- 0x00000164
+tick=0326 phase=fetch   pc=0x00000164 ir=0x01ff2023 sw t6, 0(t5)             | ir <- mem[0x00000164]
+tick=0327 phase=execute pc=0x00000164 ir=0x01ff2023 sw t6, 0(t5)             | mem[0x00ff0008] <- 0x0000006c; pc <- 0x00000168
+tick=0328 phase=fetch   pc=0x00000168 ir=0x00430313 addi t1, t1, 4           | ir <- mem[0x00000168]
+tick=0329 phase=execute pc=0x00000168 ir=0x00430313 addi t1, t1, 4           | t1 <- 0x00020010; pc <- 0x0000016c
+tick=0330 phase=fetch   pc=0x0000016c ir=0xfff28293 addi t0, t0, -1          | ir <- mem[0x0000016c]
+tick=0331 phase=execute pc=0x0000016c ir=0xfff28293 addi t0, t0, -1          | t0 <- 0x00000002; pc <- 0x00000170
+tick=0332 phase=fetch   pc=0x00000170 ir=0xfedff06f jal x0, -20              | ir <- mem[0x00000170]
+tick=0333 phase=execute pc=0x00000170 ir=0xfedff06f jal x0, -20              | x0 write discarded; pc <- 0x0000015c
+tick=0334 phase=fetch   pc=0x0000015c ir=0x00028c63 beq t0, x0, 24           | ir <- mem[0x0000015c]
+tick=0335 phase=execute pc=0x0000015c ir=0x00028c63 beq t0, x0, 24           | branch unit: rs1=0x00000002, rs2=0x00000000, take_branch=not taken; alu_target=0x00000174; pc <- 0x00000160
+tick=0336 phase=fetch   pc=0x00000160 ir=0x00032f83 lw t6, 0(t1)             | ir <- mem[0x00000160]
+tick=0337 phase=execute pc=0x00000160 ir=0x00032f83 lw t6, 0(t1)             | mem[0x00020010] -> 0x0000006c; t6 <- 0x0000006c; pc <- 0x00000164
+tick=0338 phase=fetch   pc=0x00000164 ir=0x01ff2023 sw t6, 0(t5)             | ir <- mem[0x00000164]
+tick=0339 phase=execute pc=0x00000164 ir=0x01ff2023 sw t6, 0(t5)             | mem[0x00ff0008] <- 0x0000006c; pc <- 0x00000168
+tick=0340 phase=fetch   pc=0x00000168 ir=0x00430313 addi t1, t1, 4           | ir <- mem[0x00000168]
+tick=0341 phase=execute pc=0x00000168 ir=0x00430313 addi t1, t1, 4           | t1 <- 0x00020014; pc <- 0x0000016c
+tick=0342 phase=fetch   pc=0x0000016c ir=0xfff28293 addi t0, t0, -1          | ir <- mem[0x0000016c]
+tick=0343 phase=execute pc=0x0000016c ir=0xfff28293 addi t0, t0, -1          | t0 <- 0x00000001; pc <- 0x00000170
+tick=0344 phase=fetch   pc=0x00000170 ir=0xfedff06f jal x0, -20              | ir <- mem[0x00000170]
+tick=0345 phase=execute pc=0x00000170 ir=0xfedff06f jal x0, -20              | x0 write discarded; pc <- 0x0000015c
+tick=0346 phase=fetch   pc=0x0000015c ir=0x00028c63 beq t0, x0, 24           | ir <- mem[0x0000015c]
+tick=0347 phase=execute pc=0x0000015c ir=0x00028c63 beq t0, x0, 24           | branch unit: rs1=0x00000001, rs2=0x00000000, take_branch=not taken; alu_target=0x00000174; pc <- 0x00000160
+tick=0348 phase=fetch   pc=0x00000160 ir=0x00032f83 lw t6, 0(t1)             | ir <- mem[0x00000160]
+tick=0349 phase=execute pc=0x00000160 ir=0x00032f83 lw t6, 0(t1)             | mem[0x00020014] -> 0x0000006f; t6 <- 0x0000006f; pc <- 0x00000164
+tick=0350 phase=fetch   pc=0x00000164 ir=0x01ff2023 sw t6, 0(t5)             | ir <- mem[0x00000164]
+tick=0351 phase=execute pc=0x00000164 ir=0x01ff2023 sw t6, 0(t5)             | mem[0x00ff0008] <- 0x0000006f; pc <- 0x00000168
+tick=0352 phase=fetch   pc=0x00000168 ir=0x00430313 addi t1, t1, 4           | ir <- mem[0x00000168]
+tick=0353 phase=execute pc=0x00000168 ir=0x00430313 addi t1, t1, 4           | t1 <- 0x00020018; pc <- 0x0000016c
+tick=0354 phase=fetch   pc=0x0000016c ir=0xfff28293 addi t0, t0, -1          | ir <- mem[0x0000016c]
+tick=0355 phase=execute pc=0x0000016c ir=0xfff28293 addi t0, t0, -1          | t0 <- 0x00000000; pc <- 0x00000170
+tick=0356 phase=fetch   pc=0x00000170 ir=0xfedff06f jal x0, -20              | ir <- mem[0x00000170]
+tick=0357 phase=execute pc=0x00000170 ir=0xfedff06f jal x0, -20              | x0 write discarded; pc <- 0x0000015c
+tick=0358 phase=fetch   pc=0x0000015c ir=0x00028c63 beq t0, x0, 24           | ir <- mem[0x0000015c]
+tick=0359 phase=execute pc=0x0000015c ir=0x00028c63 beq t0, x0, 24           | branch unit: rs1=0x00000000, rs2=0x00000000, take_branch=taken; alu_target=0x00000174; pc <- 0x00000174
+tick=0360 phase=fetch   pc=0x00000174 ir=0x00012503 lw a0, 0(sp)             | ir <- mem[0x00000174]
+tick=0361 phase=execute pc=0x00000174 ir=0x00012503 lw a0, 0(sp)             | mem[0x000efffc] -> 0x00020000; a0 <- 0x00020000; pc <- 0x00000178
+tick=0362 phase=fetch   pc=0x00000178 ir=0x00410113 addi sp, sp, 4           | ir <- mem[0x00000178]
+tick=0363 phase=execute pc=0x00000178 ir=0x00410113 addi sp, sp, 4           | sp <- 0x000f0000; pc <- 0x0000017c
+tick=0364 phase=fetch   pc=0x0000017c ir=0x00008067 jalr x0, 0(ra)           | ir <- mem[0x0000017c]
+tick=0365 phase=execute pc=0x0000017c ir=0x00008067 jalr x0, 0(ra)           | x0 write discarded; pc <- 0x000000b0
+tick=0366 phase=fetch   pc=0x000000b0 ir=0xfff00073 halt                     | ir <- mem[0x000000b0]
+tick=0367 phase=execute pc=0x000000b0 ir=0xfff00073 halt                     | halt
