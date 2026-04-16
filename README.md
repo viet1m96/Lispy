@@ -253,7 +253,6 @@ addr + 8  : char[1]
 | `0x0c` | `OUT_STATUS` | состояние выходного устройства |
 | `0x10` | `IRQ_ACK` | подтверждение чтения входных данных |
 
-На текущем этапе это ещё не полноценная trap-система. По сути реализован polling/latch-механизм ввода-вывода через MMIO, а полноценная обработка прерываний будет добавляться позднее.
 
 ---
 
@@ -455,7 +454,7 @@ run-lisp <input.lisp> [max_ticks]
 **Ссылка на схему datapath:**
 
 ```text
-[Datapath](fig/datapath_lab4.drawio.png)
+![Datapath](fig/datapath_lab4.drawio.png)
 ```
 
 
@@ -464,7 +463,7 @@ run-lisp <input.lisp> [max_ticks]
 **Ссылка на схему control unit:**
 
 ```text
-[ControlUnit](fig/CU_lab4.drawio.png)
+![ControlUnit](fig/CU_lab4.drawio.png)
 ```
 
 ### Сигналы управления
