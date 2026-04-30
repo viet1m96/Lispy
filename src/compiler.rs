@@ -2,16 +2,54 @@ use std::collections::BTreeMap;
 
 use crate::asm::{AsmProgram, AsmSection, DataItem, Expr};
 use crate::isa::{AluRKind, BranchKind, Instruction, Reg};
-use crate::lisp::{parse_program, Binding, Callee, Defun, Expr as LExpr, Program, TopForm};
-use crate::runtime::{
-    emit_runtime, load_mmio_base, load_u32, mov, PRINT_INT_LABEL, PRINT_PSTR_LABEL,
-    PRINT_VALUE_LABEL, READ_LINE_LABEL,
+use crate::lisp::{
+    parse_program, Binding, Callee, Defun, Expr as LExpr, Param, Program, TopForm, TypeName,
 };
+use crate::runtime::{
+    emit_runtime, load_mmio_base, load_u32, mov, DEFAULT_INPUT_HANDLER_LABEL, PRINT_INT_LABEL,
+    PRINT_PSTR_LABEL, PRINT_VALUE_LABEL, READ_CHAR_LABEL, READ_LINE_LABEL,
+};
+use crate::typecheck::typecheck_program;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ValueKind {
+    Int,
+    I64,
+    String,
+    Unknown,
+}
+
+impl ValueKind {
+    fn from_type_name<T: std::borrow::Borrow<TypeName>>(ty: T) -> Self {
+        match *ty.borrow() {
+            TypeName::Int => Self::Int,
+            TypeName::I64 => Self::I64,
+            TypeName::Bool => Self::Int,
+            TypeName::String => Self::String,
+        }
+    }
+
+    fn width_words(self) -> usize {
+        match self {
+            Self::I64 => 2,
+            Self::Int | Self::String | Self::Unknown => 1,
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 struct FunctionSig {
     label: String,
-    param_count: usize,
+    param_kinds: Vec<ValueKind>,
+    param_offsets: Vec<i32>,
+    param_word_count: usize,
+    return_kind: ValueKind,
+}
+
+impl FunctionSig {
+    fn param_count(&self) -> usize {
+        self.param_kinds.len()
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -21,8 +59,14 @@ enum VarLoc {
 }
 
 #[derive(Debug, Clone)]
+struct VarInfo {
+    loc: VarLoc,
+    kind: ValueKind,
+}
+
+#[derive(Debug, Clone)]
 struct Env {
-    scopes: Vec<BTreeMap<String, VarLoc>>,
+    scopes: Vec<BTreeMap<String, VarInfo>>,
     next_local_slot: usize,
 }
 
@@ -34,14 +78,21 @@ impl Env {
         }
     }
 
-    fn function(param_names: &[String]) -> Self {
+    fn function(params: &[Param], sig: &FunctionSig) -> Self {
         let mut root = BTreeMap::new();
-        for (index, name) in param_names.iter().enumerate() {
-            root.insert(name.clone(), VarLoc::Frame((index as i32) * 4));
+        for (index, param) in params.iter().enumerate() {
+            let kind = sig.param_kinds[index];
+            root.insert(
+                param.name.clone(),
+                VarInfo {
+                    loc: VarLoc::Frame(sig.param_offsets[index]),
+                    kind,
+                },
+            );
         }
         Self {
             scopes: vec![root],
-            next_local_slot: param_names.len(),
+            next_local_slot: sig.param_word_count,
         }
     }
 
@@ -53,25 +104,25 @@ impl Env {
         self.scopes.pop();
     }
 
-    fn insert_current(&mut self, name: String, loc: VarLoc) {
+    fn insert_current(&mut self, name: String, info: VarInfo) {
         self.scopes
             .last_mut()
             .expect("scope stack is never empty")
-            .insert(name, loc);
+            .insert(name, info);
     }
 
-    fn lookup(&self, name: &str) -> Option<VarLoc> {
+    fn lookup(&self, name: &str) -> Option<VarInfo> {
         for scope in self.scopes.iter().rev() {
-            if let Some(loc) = scope.get(name) {
-                return Some(loc.clone());
+            if let Some(info) = scope.get(name) {
+                return Some(info.clone());
             }
         }
         None
     }
 
-    fn alloc_frame_slot(&mut self) -> i32 {
+    fn alloc_frame_slots(&mut self, width_words: usize) -> i32 {
         let offset = (self.next_local_slot as i32) * 4;
-        self.next_local_slot += 1;
+        self.next_local_slot += width_words.max(1);
         offset
     }
 }
@@ -82,8 +133,10 @@ pub fn compile_source(source: &str) -> Result<AsmProgram, String> {
 }
 
 pub fn compile_program(ast: &Program) -> Result<AsmProgram, String> {
+    typecheck_program(ast)?;
     let mut compiler = Compiler::new();
     compiler.collect_function_signatures(ast)?;
+    compiler.emit_trap_vector_table();
     compiler.compile_top_level(ast)?;
     compiler.compile_functions(ast)?;
     Ok(compiler.finish())
@@ -91,7 +144,7 @@ pub fn compile_program(ast: &Program) -> Result<AsmProgram, String> {
 
 struct Compiler {
     program: AsmProgram,
-    global_vars: BTreeMap<String, String>,
+    global_vars: BTreeMap<String, VarInfo>,
     function_sigs: BTreeMap<String, FunctionSig>,
     string_labels: BTreeMap<String, String>,
     next_label_id: usize,
@@ -101,6 +154,8 @@ struct Compiler {
     needs_print_pstr: bool,
     needs_print_value: bool,
     needs_read_line: bool,
+    needs_read_char: bool,
+    has_custom_input_handler: bool,
 }
 
 impl Compiler {
@@ -119,6 +174,8 @@ impl Compiler {
             needs_print_pstr: false,
             needs_print_value: false,
             needs_read_line: false,
+            needs_read_char: false,
+            has_custom_input_handler: false,
         }
     }
 
@@ -129,6 +186,8 @@ impl Compiler {
             self.needs_print_pstr,
             self.needs_print_value,
             self.needs_read_line,
+            self.needs_read_char,
+            !self.has_custom_input_handler,
         );
         self.program
     }
@@ -139,23 +198,60 @@ impl Compiler {
                 if self.function_sigs.contains_key(&defun.name) {
                     return Err(format!("duplicate function definition: {}", defun.name));
                 }
-                if defun.params.len() > 8 {
+                if defun.name == DEFAULT_INPUT_HANDLER_LABEL {
+                    self.has_custom_input_handler = true;
+                }
+
+                let param_kinds = defun
+                    .params
+                    .iter()
+                    .map(|param| ValueKind::from_type_name(param.type_ann))
+                    .collect::<Vec<_>>();
+
+                let mut param_offsets = Vec::new();
+                let mut param_word_count = 0usize;
+                for kind in &param_kinds {
+                    param_offsets.push((param_word_count as i32) * 4);
+                    param_word_count += kind.width_words();
+                }
+                if param_word_count > 8 {
                     return Err(format!(
-                        "function '{}' has {} parameters, but milestone 6 supports at most 8",
+                        "function '{}' uses {} argument words, but this ABI supports at most 8 a-register words",
                         defun.name,
-                        defun.params.len()
+                        param_word_count
                     ));
                 }
+
+                let return_kind = ValueKind::from_type_name(defun.return_type);
+
                 self.function_sigs.insert(
                     defun.name.clone(),
                     FunctionSig {
-                        label: format!("fn_{}", sanitize(&defun.name)),
-                        param_count: defun.params.len(),
+                        label: if defun.name == DEFAULT_INPUT_HANDLER_LABEL {
+                            DEFAULT_INPUT_HANDLER_LABEL.to_string()
+                        } else {
+                            format!("fn_{}", sanitize(&defun.name))
+                        },
+                        param_kinds,
+                        param_offsets,
+                        param_word_count,
+                        return_kind,
                     },
                 );
             }
         }
         Ok(())
+    }
+
+    fn emit_trap_vector_table(&mut self) {
+        let handler_label = self
+            .function_sigs
+            .get(DEFAULT_INPUT_HANDLER_LABEL)
+            .map(|sig| sig.label.clone())
+            .unwrap_or_else(|| DEFAULT_INPUT_HANDLER_LABEL.to_string());
+        self.program.label(AsmSection::Text, "__trap_vector_table");
+        self.program
+            .emit_data(AsmSection::Text, DataItem::LabelAddr(handler_label));
     }
 
     fn compile_top_level(&mut self, ast: &Program) -> Result<(), String> {
@@ -165,7 +261,7 @@ impl Compiler {
             .forms
             .iter()
             .filter_map(|form| match form {
-                TopForm::Expr(expr) => Some(count_let_slots_in_expr(expr)),
+                TopForm::Expr(expr) => Some(count_let_slots_in_expr(expr, self)),
                 TopForm::Defun(_) => None,
             })
             .sum();
@@ -214,39 +310,51 @@ impl Compiler {
             .ok_or_else(|| format!("missing signature for function {}", defun.name))?
             .clone();
 
-        let local_slot_count = defun.params.len() + count_let_slots_in_body(&defun.body);
+        let local_slot_count = sig.param_word_count + count_let_slots_in_body(&defun.body, self);
         let frame_bytes = (local_slot_count as i32) * 4;
 
         self.program.label(AsmSection::Text, &sig.label);
+        if defun.name == DEFAULT_INPUT_HANDLER_LABEL {
+            self.emit_interrupt_context_save();
+        }
         self.emit_prologue(frame_bytes);
 
-        let mut env = Env::function(&defun.params);
+        let mut env = Env::function(&defun.params, &sig);
 
-        for (index, _name) in defun.params.iter().enumerate() {
-            let arg = arg_reg(index)?;
-            let offset = (index as i32) * 4;
-            self.emit_store_frame(arg, offset);
+        let mut arg_word = 0usize;
+        for (index, _param) in defun.params.iter().enumerate() {
+            let kind = sig.param_kinds[index];
+            let offset = sig.param_offsets[index];
+            let lo = arg_reg(arg_word)?;
+            self.emit_store_frame(lo, offset);
+            arg_word += 1;
+            if kind == ValueKind::I64 {
+                let hi = arg_reg(arg_word)?;
+                self.emit_store_frame(hi, offset + 4);
+                arg_word += 1;
+            }
         }
 
-        for expr in &defun.body {
-            self.compile_expr(expr, Reg::A0, &mut env)?;
+        for (index, expr) in defun.body.iter().enumerate() {
+            let is_last = index + 1 == defun.body.len();
+            if is_last && sig.return_kind == ValueKind::I64 {
+                self.compile_i64_expr(expr, &mut env)?;
+            } else {
+                self.compile_expr(expr, Reg::A0, &mut env)?;
+            }
         }
 
-        self.emit_epilogue(frame_bytes);
+        if defun.name == DEFAULT_INPUT_HANDLER_LABEL {
+            self.emit_epilogue_without_return(frame_bytes);
+            self.emit_interrupt_context_restore();
+            self.program.emit_inst(AsmSection::Text, Instruction::Mret);
+        } else {
+            self.emit_epilogue(frame_bytes);
+        }
         Ok(())
     }
 
     fn compile_expr(&mut self, expr: &LExpr, target: Reg, env: &mut Env) -> Result<(), String> {
-        match expr {
-            LExpr::Setq { value, .. } if is_i64_expr(value) => {
-                return Err("i64 variables are not supported yet in this milestone; use i64 expressions directly".to_string())
-            }
-            LExpr::Let { bindings, .. } if bindings.iter().any(|binding| is_i64_expr(&binding.value)) => {
-                return Err("i64 let bindings are not supported yet in this milestone; use i64 expressions directly".to_string())
-            }
-            _ => {}
-        }
-
         if is_foldable_expr(expr) {
             if let Some(value) = const_i32(expr) {
                 self.emit_load_imm(target, value);
@@ -264,11 +372,33 @@ impl Compiler {
         match expr {
             LExpr::Number(value) => {
                 let value = i32::try_from(*value).map_err(|_| {
-                    "32-bit number literal out of range; wrap it as (i64 <number>)".to_string()
+                    "32-bit number literal out of range; cast it as (as-i64 <number>) when a 64-bit value is expected".to_string()
                 })?;
                 self.emit_load_imm(target, value)
             }
-            LExpr::I64(_) => unreachable!("i64 expressions are handled before scalar codegen"),
+            LExpr::Cast { target_type, value } => match target_type {
+                TypeName::I64 => {
+                    self.compile_i64_expr(value, env)?;
+                    if target != Reg::A0 {
+                        mov(&mut self.program, target, Reg::A0);
+                    }
+                }
+                TypeName::Int | TypeName::Bool => {
+                    if self.infer_expr_kind_scoped(value, env) == ValueKind::I64
+                        || is_i64_expr(value)
+                    {
+                        self.compile_i64_expr(value, env)?;
+                        if *target_type == TypeName::Bool {
+                            self.emit_r(AluRKind::Or, target, Reg::A0, Reg::A1);
+                        } else if target != Reg::A0 {
+                            mov(&mut self.program, target, Reg::A0);
+                        }
+                    } else {
+                        self.compile_expr(value, target, env)?;
+                    }
+                }
+                TypeName::String => self.compile_expr(value, target, env)?,
+            },
             LExpr::Bool(value) => self.emit_load_imm(target, if *value { 1 } else { 0 }),
             LExpr::Nil => self.emit_load_imm(target, 0),
             LExpr::String(text) => {
@@ -276,19 +406,35 @@ impl Compiler {
                 self.emit_load_addr(target, &label);
             }
             LExpr::Ident(name) => {
-                let loc = self
+                let info = self
                     .lookup_var(name, env)
                     .ok_or_else(|| format!("unknown variable: {name}"))?;
-                self.emit_load_from_loc(target, &loc);
+                if info.kind == ValueKind::I64 {
+                    self.emit_load_from_info_pair(target, &info);
+                } else {
+                    self.emit_load_from_loc(target, &info.loc);
+                }
             }
-            LExpr::Setq { name, value } => {
-                self.compile_expr(value, target, env)?;
-                let loc = if let Some(existing) = self.lookup_var(name, env) {
+            LExpr::Setq {
+                name,
+                type_ann,
+                value,
+            } => {
+                let declared_kind = ValueKind::from_type_name(*type_ann);
+
+                let info = if let Some(existing) = self.lookup_var(name, env) {
+                    if existing.kind != declared_kind {
+                        return Err(format!(
+                            "cannot redeclare variable '{name}' as {:?}; existing kind is {:?}",
+                            declared_kind, existing.kind
+                        ));
+                    }
                     existing
                 } else {
-                    VarLoc::Global(self.define_global(name))
+                    self.define_global(name, declared_kind)
                 };
-                self.emit_store_to_loc(target, &loc);
+
+                self.compile_store_value(value, target, env, &info)?;
             }
             LExpr::Begin(items) => {
                 for item in items {
@@ -329,15 +475,17 @@ impl Compiler {
                 self.compile_expr(finally, target, env)?;
             }
             LExpr::Print(value) => {
-                if let Some(const_value) = const_i64(value) {
-                    self.emit_print_const_i64(const_value, target);
+                let kind = self.infer_expr_kind_scoped(value, env);
+                if kind == ValueKind::I64 || is_i64_expr(value) {
+                    if let Some(const_value) = const_i64(value) {
+                        self.emit_print_const_i64(const_value, target);
+                    } else {
+                        self.compile_i64_expr(value, env)?;
+                        self.emit_print_dynamic_u64(target);
+                    }
                     return Ok(());
                 }
-                if is_i64_expr(value) {
-                    return Err("dynamic i64 print is not supported yet in this milestone; only constant i64 expressions can be printed".to_string());
-                }
-                let kind = infer_expr_kind(value);
-                self.compile_expr(value, Reg::A0, env)?;
+
                 let label = match kind {
                     ValueKind::Int => {
                         self.needs_print_int = true;
@@ -347,14 +495,13 @@ impl Compiler {
                         self.needs_print_pstr = true;
                         PRINT_PSTR_LABEL
                     }
-                    ValueKind::I64 => {
-                        return Err("dynamic i64 print is not supported yet in this milestone; only constant i64 expressions can be printed".to_string())
-                    }
+                    ValueKind::I64 => unreachable!("i64 print handled above"),
                     ValueKind::Unknown => {
                         self.needs_print_value = true;
                         PRINT_VALUE_LABEL
                     }
                 };
+                self.compile_expr(value, Reg::A0, env)?;
                 self.program.emit_inst(
                     AsmSection::Text,
                     Instruction::Jal {
@@ -366,25 +513,32 @@ impl Compiler {
                     mov(&mut self.program, target, Reg::A0);
                 }
             }
+            LExpr::PrintStr(value) => {
+                self.compile_expr(value, Reg::A0, env)?;
+                self.needs_print_pstr = true;
+                self.program.emit_inst(
+                    AsmSection::Text,
+                    Instruction::Jal {
+                        rd: Reg::Ra,
+                        off: Expr::pcrel(PRINT_PSTR_LABEL),
+                    },
+                );
+                if target != Reg::A0 {
+                    mov(&mut self.program, target, Reg::A0);
+                }
+            }
             LExpr::ReadChar => {
-                load_mmio_base(&mut self.program, Reg::T6);
+                self.needs_read_char = true;
                 self.program.emit_inst(
                     AsmSection::Text,
-                    Instruction::Lw {
-                        rd: target,
-                        rs1: Reg::T6,
-                        off: Expr::from_i32(4),
+                    Instruction::Jal {
+                        rd: Reg::Ra,
+                        off: Expr::pcrel(READ_CHAR_LABEL),
                     },
                 );
-                self.emit_load_imm(Reg::T5, 1);
-                self.program.emit_inst(
-                    AsmSection::Text,
-                    Instruction::Sw {
-                        rs2: Reg::T5,
-                        rs1: Reg::T6,
-                        off: Expr::from_i32(16),
-                    },
-                );
+                if target != Reg::A0 {
+                    mov(&mut self.program, target, Reg::A0);
+                }
             }
             LExpr::ReadLine => {
                 self.needs_read_line = true;
@@ -399,6 +553,8 @@ impl Compiler {
                     mov(&mut self.program, target, Reg::A0);
                 }
             }
+            LExpr::ReadInputData => self.compile_read_input_data(&[], target)?,
+            LExpr::HandlerDone => self.compile_handler_done(&[], target)?,
             LExpr::Halt => {
                 self.program.emit_inst(AsmSection::Text, Instruction::Halt);
             }
@@ -407,6 +563,199 @@ impl Compiler {
                 Callee::Ident(name) => self.compile_user_call(name, args, target, env)?,
             },
         }
+        Ok(())
+    }
+
+    fn compile_i64_expr(&mut self, expr: &LExpr, env: &mut Env) -> Result<(), String> {
+        if let Some(value) = const_i64(expr) {
+            self.emit_load_const_i64(value, Reg::A0);
+            return Ok(());
+        }
+
+        match expr {
+            LExpr::Cast { target_type, value } => match target_type {
+                TypeName::I64 => {
+                    if self.infer_expr_kind_scoped(value, env) == ValueKind::I64
+                        || is_i64_expr(value)
+                    {
+                        self.compile_i64_expr(value, env)
+                    } else {
+                        self.compile_expr(value, Reg::A0, env)?;
+                        self.emit_sign_extend_a0_to_a1();
+                        Ok(())
+                    }
+                }
+                TypeName::Int | TypeName::Bool => {
+                    self.compile_expr(value, Reg::A0, env)?;
+                    self.emit_sign_extend_a0_to_a1();
+                    Ok(())
+                }
+                TypeName::String => Err("cannot use string cast in an i64 expression".to_string()),
+            },
+            LExpr::Number(value) => {
+                self.emit_load_const_i64(*value, Reg::A0);
+                Ok(())
+            }
+            LExpr::Bool(value) => {
+                self.emit_load_const_i64(if *value { 1 } else { 0 }, Reg::A0);
+                Ok(())
+            }
+            LExpr::Nil => {
+                self.emit_load_const_i64(0, Reg::A0);
+                Ok(())
+            }
+            LExpr::If {
+                cond,
+                then_branch,
+                else_branch,
+            } => {
+                let label_else = self.next_label("i64_if_else");
+                let label_end = self.next_label("i64_if_end");
+                self.compile_expr(cond, Reg::T0, env)?;
+                self.emit_branch(BranchKind::Beq, Reg::T0, Reg::Zero, &label_else);
+                self.compile_i64_expr(then_branch, env)?;
+                self.emit_jump(&label_end);
+                self.program.label(AsmSection::Text, &label_else);
+                self.compile_i64_expr(else_branch, env)?;
+                self.program.label(AsmSection::Text, &label_end);
+                Ok(())
+            }
+            LExpr::Begin(items) => {
+                for (index, item) in items.iter().enumerate() {
+                    if index + 1 == items.len() {
+                        self.compile_i64_expr(item, env)?;
+                    } else {
+                        self.compile_expr(item, Reg::A0, env)?;
+                    }
+                }
+                Ok(())
+            }
+            LExpr::Ident(name) => {
+                let info = self
+                    .lookup_var(name, env)
+                    .ok_or_else(|| format!("unknown variable: {name}"))?;
+                if info.kind == ValueKind::I64 {
+                    self.emit_load_from_info_pair(Reg::A0, &info);
+                } else {
+                    self.emit_load_from_loc(Reg::A0, &info.loc);
+                    self.emit_sign_extend_a0_to_a1();
+                }
+                Ok(())
+            }
+            LExpr::Setq {
+                name,
+                type_ann,
+                value,
+            } => {
+                let declared_kind = ValueKind::from_type_name(*type_ann);
+                let info = if let Some(existing) = self.lookup_var(name, env) {
+                    if existing.kind != declared_kind {
+                        return Err(format!(
+                            "cannot redeclare variable '{name}' as {:?}; existing kind is {:?}",
+                            declared_kind, existing.kind
+                        ));
+                    }
+                    existing
+                } else {
+                    self.define_global(name, declared_kind)
+                };
+                self.compile_store_value(value, Reg::A0, env, &info)?;
+                if info.kind == ValueKind::I64 {
+                    self.emit_load_from_info_pair(Reg::A0, &info);
+                } else {
+                    self.emit_load_from_loc(Reg::A0, &info.loc);
+                    self.emit_sign_extend_a0_to_a1();
+                }
+                Ok(())
+            }
+            LExpr::Call { callee, args } => match callee {
+                Callee::Ident(name) => {
+                    let sig = self
+                        .function_sigs
+                        .get(name)
+                        .ok_or_else(|| format!("unknown function: {name}"))?
+                        .clone();
+                    self.compile_user_call(name, args, Reg::A0, env)?;
+                    if sig.return_kind == ValueKind::I64 {
+                        Ok(())
+                    } else {
+                        self.emit_sign_extend_a0_to_a1();
+                        Ok(())
+                    }
+                }
+                Callee::Builtin(name) if name == "*" => self.compile_i64_mul(args, env),
+                Callee::Builtin(name) if name == "+" => self.compile_i64_add(args, env),
+                Callee::Builtin(name) if name == "-" => self.compile_i64_sub(args, env),
+                Callee::Builtin(_) => {
+                    self.compile_expr(expr, Reg::A0, env)?;
+                    self.emit_zero_extend_a0_to_a1();
+                    Ok(())
+                }
+            },
+            _ => {
+                self.compile_expr(expr, Reg::A0, env)?;
+                self.emit_sign_extend_a0_to_a1();
+                Ok(())
+            }
+        }
+    }
+
+    fn compile_i64_mul(&mut self, args: &[LExpr], env: &mut Env) -> Result<(), String> {
+        if args.is_empty() {
+            return Err("'*' expects at least 1 argument".to_string());
+        }
+        if args.len() == 1 {
+            self.compile_i64_expr(&args[0], env)?;
+            return Ok(());
+        }
+
+        self.compile_i64_expr(&args[0], env)?;
+        for arg in &args[1..] {
+            self.push_reg(Reg::A0);
+            self.push_reg(Reg::A1);
+            self.compile_i64_expr(arg, env)?;
+            self.pop_reg(Reg::T1);
+            self.pop_reg(Reg::T0);
+            self.emit_mul_u64_pairs();
+        }
+        Ok(())
+    }
+
+    fn compile_i64_add(&mut self, args: &[LExpr], env: &mut Env) -> Result<(), String> {
+        if args.is_empty() {
+            self.emit_load_const_i64(0, Reg::A0);
+            return Ok(());
+        }
+        self.compile_i64_expr(&args[0], env)?;
+        for arg in &args[1..] {
+            self.push_reg(Reg::A0);
+            self.push_reg(Reg::A1);
+            self.compile_i64_expr(arg, env)?;
+            self.pop_reg(Reg::T1);
+            self.pop_reg(Reg::T0);
+            self.emit_r(AluRKind::Add, Reg::T2, Reg::T0, Reg::A0);
+            self.emit_r(AluRKind::Sltu, Reg::T3, Reg::T2, Reg::T0);
+            self.emit_r(AluRKind::Add, Reg::A1, Reg::T1, Reg::A1);
+            self.emit_r(AluRKind::Add, Reg::A1, Reg::A1, Reg::T3);
+            mov(&mut self.program, Reg::A0, Reg::T2);
+        }
+        Ok(())
+    }
+
+    fn compile_i64_sub(&mut self, args: &[LExpr], env: &mut Env) -> Result<(), String> {
+        if args.len() != 2 {
+            return Err("dynamic i64 '-' currently supports exactly 2 arguments".to_string());
+        }
+        self.compile_i64_expr(&args[0], env)?;
+        self.push_reg(Reg::A0);
+        self.push_reg(Reg::A1);
+        self.compile_i64_expr(&args[1], env)?;
+        self.pop_reg(Reg::T1);
+        self.pop_reg(Reg::T0);
+        self.emit_r(AluRKind::Sltu, Reg::T3, Reg::T0, Reg::A0);
+        self.emit_r(AluRKind::Sub, Reg::A0, Reg::T0, Reg::A0);
+        self.emit_r(AluRKind::Sub, Reg::A1, Reg::T1, Reg::A1);
+        self.emit_r(AluRKind::Sub, Reg::A1, Reg::A1, Reg::T3);
         Ok(())
     }
 
@@ -419,18 +768,28 @@ impl Compiler {
     ) -> Result<(), String> {
         let mut slots = Vec::new();
         for binding in bindings {
-            let offset = env.alloc_frame_slot();
-            slots.push((binding.name.clone(), offset, binding.value.clone()));
+            let kind = ValueKind::from_type_name(binding.type_ann);
+            let offset = env.alloc_frame_slots(kind.width_words());
+            slots.push((binding.name.clone(), offset, kind, binding.value.clone()));
         }
 
-        for (_name, offset, value) in &slots {
-            self.compile_expr(value, target, env)?;
-            self.emit_store_frame(target, *offset);
+        for (_name, offset, kind, value) in &slots {
+            let info = VarInfo {
+                loc: VarLoc::Frame(*offset),
+                kind: *kind,
+            };
+            self.compile_store_value(value, target, env, &info)?;
         }
 
         env.push_scope();
-        for (name, offset, _) in &slots {
-            env.insert_current(name.clone(), VarLoc::Frame(*offset));
+        for (name, offset, kind, _) in &slots {
+            env.insert_current(
+                name.clone(),
+                VarInfo {
+                    loc: VarLoc::Frame(*offset),
+                    kind: *kind,
+                },
+            );
         }
         for expr in body {
             self.compile_expr(expr, target, env)?;
@@ -510,11 +869,44 @@ impl Compiler {
             "strlen" => self.compile_strlen(args, target, env),
             "strget" => self.compile_strget(args, target, env),
             "strset" => self.compile_strset(args, target, env),
-            "print-str" => self.compile_print_str(args, target, env),
             other => Err(format!(
                 "builtin '{other}' is reserved for a later milestone"
             )),
         }
+    }
+
+    fn compile_read_input_data(&mut self, args: &[LExpr], target: Reg) -> Result<(), String> {
+        if !args.is_empty() {
+            return Err("read-input-data expects no arguments".to_string());
+        }
+        load_mmio_base(&mut self.program, Reg::T6);
+        self.program.emit_inst(
+            AsmSection::Text,
+            Instruction::Lw {
+                rd: target,
+                rs1: Reg::T6,
+                off: Expr::from_i32(4),
+            },
+        );
+        Ok(())
+    }
+
+    fn compile_handler_done(&mut self, args: &[LExpr], target: Reg) -> Result<(), String> {
+        if !args.is_empty() {
+            return Err("handler-done expects no arguments".to_string());
+        }
+        load_mmio_base(&mut self.program, Reg::T6);
+        self.emit_load_imm(Reg::T5, 1);
+        self.program.emit_inst(
+            AsmSection::Text,
+            Instruction::Sw {
+                rs2: Reg::T5,
+                rs1: Reg::T6,
+                off: Expr::from_i32(16),
+            },
+        );
+        self.emit_load_imm(target, 0);
+        Ok(())
     }
 
     fn compile_user_call(
@@ -530,29 +922,49 @@ impl Compiler {
             .ok_or_else(|| format!("unknown function: {name}"))?
             .clone();
 
-        if args.len() != sig.param_count {
+        if args.len() != sig.param_count() {
             return Err(format!(
                 "function '{}' expects {} arguments, got {}",
                 name,
-                sig.param_count,
+                sig.param_count(),
                 args.len()
             ));
         }
-        if args.len() > 8 {
+        if sig.param_word_count > 8 {
             return Err(format!(
-                "function '{}' call uses {} arguments, but milestone 6 supports at most 8",
-                name,
-                args.len()
+                "function '{}' call uses {} argument words, but this ABI supports at most 8",
+                name, sig.param_word_count
             ));
         }
 
-        for arg in args {
-            self.compile_expr(arg, Reg::T0, env)?;
-            self.push_reg(Reg::T0);
+        for (arg, kind) in args.iter().zip(sig.param_kinds.iter()) {
+            match kind {
+                ValueKind::I64 => {
+                    self.compile_i64_expr(arg, env)?;
+                    self.push_reg(Reg::A0);
+                    self.push_reg(Reg::A1);
+                }
+                _ => {
+                    self.compile_expr(arg, Reg::T0, env)?;
+                    self.push_reg(Reg::T0);
+                }
+            }
         }
 
-        for index in (0..args.len()).rev() {
-            self.pop_reg(arg_reg(index)?);
+        let mut arg_word = sig.param_word_count;
+        for kind in sig.param_kinds.iter().rev() {
+            match kind {
+                ValueKind::I64 => {
+                    arg_word -= 1;
+                    self.pop_reg(arg_reg(arg_word)?);
+                    arg_word -= 1;
+                    self.pop_reg(arg_reg(arg_word)?);
+                }
+                _ => {
+                    arg_word -= 1;
+                    self.pop_reg(arg_reg(arg_word)?);
+                }
+            }
         }
 
         self.program.emit_inst(
@@ -631,15 +1043,25 @@ impl Compiler {
             ));
         }
 
+        let lhs_kind = self.infer_expr_kind_scoped(&args[0], env);
+        let rhs_kind = self.infer_expr_kind_scoped(&args[1], env);
+        if lhs_kind == ValueKind::I64
+            || rhs_kind == ValueKind::I64
+            || is_i64_expr(&args[0])
+            || is_i64_expr(&args[1])
+        {
+            return self.compile_compare_i64(args, target, env, kind);
+        }
+
         self.compile_expr(&args[0], Reg::T0, env)?;
         self.push_reg(Reg::T0);
         self.compile_expr(&args[1], Reg::T1, env)?;
         self.pop_reg(Reg::T0);
 
         let label_true = self.next_label("cmp_true");
+        let label_false = self.next_label("cmp_false");
         let label_end = self.next_label("cmp_end");
 
-        self.emit_load_imm(target, 0);
         match kind {
             CompareKind::Eq => self.emit_branch(BranchKind::Beq, Reg::T0, Reg::T1, &label_true),
             CompareKind::Ne => self.emit_branch(BranchKind::Bne, Reg::T0, Reg::T1, &label_true),
@@ -648,11 +1070,81 @@ impl Compiler {
             CompareKind::Gt => self.emit_branch(BranchKind::Blt, Reg::T1, Reg::T0, &label_true),
             CompareKind::Ge => self.emit_branch(BranchKind::Bge, Reg::T0, Reg::T1, &label_true),
         }
-        self.emit_jump(&label_end);
+        self.emit_jump(&label_false);
         self.program.label(AsmSection::Text, &label_true);
         self.emit_load_imm(target, 1);
+        self.emit_jump(&label_end);
+        self.program.label(AsmSection::Text, &label_false);
+        self.emit_load_imm(target, 0);
         self.program.label(AsmSection::Text, &label_end);
         Ok(())
+    }
+
+    fn compile_compare_i64(
+        &mut self,
+        args: &[LExpr],
+        target: Reg,
+        env: &mut Env,
+        kind: CompareKind,
+    ) -> Result<(), String> {
+        self.compile_i64_expr(&args[0], env)?;
+        self.push_reg(Reg::A0);
+        self.push_reg(Reg::A1);
+        self.compile_i64_expr(&args[1], env)?;
+        self.pop_reg(Reg::T1);
+        self.pop_reg(Reg::T0);
+
+        let label_true = self.next_label("cmp64_true");
+        let label_false = self.next_label("cmp64_false");
+        let label_end = self.next_label("cmp64_end");
+
+        match kind {
+            CompareKind::Eq => {
+                self.emit_r(AluRKind::Xor, Reg::T2, Reg::T0, Reg::A0);
+                self.emit_r(AluRKind::Xor, Reg::T3, Reg::T1, Reg::A1);
+                self.emit_r(AluRKind::Or, Reg::T2, Reg::T2, Reg::T3);
+                self.emit_branch(BranchKind::Beq, Reg::T2, Reg::Zero, &label_true);
+                self.emit_jump(&label_false);
+            }
+            CompareKind::Ne => {
+                self.emit_r(AluRKind::Xor, Reg::T2, Reg::T0, Reg::A0);
+                self.emit_r(AluRKind::Xor, Reg::T3, Reg::T1, Reg::A1);
+                self.emit_r(AluRKind::Or, Reg::T2, Reg::T2, Reg::T3);
+                self.emit_branch(BranchKind::Bne, Reg::T2, Reg::Zero, &label_true);
+                self.emit_jump(&label_false);
+            }
+            CompareKind::Lt => self.emit_i64_less_than_branch(true, &label_true, &label_false),
+            CompareKind::Le => self.emit_i64_less_than_branch(false, &label_false, &label_true),
+            CompareKind::Gt => self.emit_i64_less_than_branch(false, &label_true, &label_false),
+            CompareKind::Ge => self.emit_i64_less_than_branch(true, &label_false, &label_true),
+        }
+
+        self.program.label(AsmSection::Text, &label_true);
+        self.emit_load_imm(target, 1);
+        self.emit_jump(&label_end);
+        self.program.label(AsmSection::Text, &label_false);
+        self.emit_load_imm(target, 0);
+        self.program.label(AsmSection::Text, &label_end);
+        Ok(())
+    }
+
+    fn emit_i64_less_than_branch(
+        &mut self,
+        lhs_is_left: bool,
+        label_true: &str,
+        label_false: &str,
+    ) {
+        if lhs_is_left {
+            self.emit_branch(BranchKind::Blt, Reg::T1, Reg::A1, label_true);
+            self.emit_branch(BranchKind::Blt, Reg::A1, Reg::T1, label_false);
+            self.emit_r(AluRKind::Sltu, Reg::T2, Reg::T0, Reg::A0);
+        } else {
+            self.emit_branch(BranchKind::Blt, Reg::A1, Reg::T1, label_true);
+            self.emit_branch(BranchKind::Blt, Reg::T1, Reg::A1, label_false);
+            self.emit_r(AluRKind::Sltu, Reg::T2, Reg::A0, Reg::T0);
+        }
+        self.emit_branch(BranchKind::Bne, Reg::T2, Reg::Zero, label_true);
+        self.emit_jump(label_false);
     }
 
     fn compile_and(&mut self, args: &[LExpr], target: Reg, env: &mut Env) -> Result<(), String> {
@@ -712,34 +1204,6 @@ impl Compiler {
         self.program.label(AsmSection::Text, &label_true);
         self.emit_load_imm(target, 1);
         self.program.label(AsmSection::Text, &label_end);
-        Ok(())
-    }
-
-    fn compile_print_str(
-        &mut self,
-        args: &[LExpr],
-        target: Reg,
-        env: &mut Env,
-    ) -> Result<(), String> {
-        if args.len() != 1 {
-            return Err(format!(
-                "print-str expects exactly 1 argument, got {}",
-                args.len()
-            ));
-        }
-
-        self.compile_expr(&args[0], Reg::A0, env)?;
-        self.needs_print_pstr = true;
-        self.program.emit_inst(
-            AsmSection::Text,
-            Instruction::Jal {
-                rd: Reg::Ra,
-                off: Expr::pcrel(PRINT_PSTR_LABEL),
-            },
-        );
-        if target != Reg::A0 {
-            mov(&mut self.program, target, Reg::A0);
-        }
         Ok(())
     }
 
@@ -854,15 +1318,121 @@ impl Compiler {
         }
     }
 
-    fn lookup_var(&self, name: &str, env: &Env) -> Option<VarLoc> {
-        env.lookup(name).or_else(|| {
-            self.global_vars
-                .get(name)
-                .map(|label| VarLoc::Global(label.clone()))
-        })
+    fn emit_zero_extend_a0_to_a1(&mut self) {
+        self.emit_load_imm(Reg::A1, 0);
     }
 
-    fn define_global(&mut self, name: &str) -> String {
+    fn emit_sign_extend_a0_to_a1(&mut self) {
+        self.emit_load_imm(Reg::T6, 31);
+        self.emit_r(AluRKind::Sra, Reg::A1, Reg::A0, Reg::T6);
+    }
+
+    fn emit_mul_u64_pairs(&mut self) {
+        // Input:
+        //   lhs = t1:t0
+        //   rhs = a1:a0
+        // Output:
+        //   product low 64 bits = a1:a0
+        self.emit_r(AluRKind::Mulhu, Reg::T2, Reg::T0, Reg::A0);
+        self.emit_r(AluRKind::Mul, Reg::T3, Reg::T1, Reg::A0);
+        self.emit_r(AluRKind::Add, Reg::T2, Reg::T2, Reg::T3);
+        self.emit_r(AluRKind::Mul, Reg::T3, Reg::T0, Reg::A1);
+        self.emit_r(AluRKind::Add, Reg::A1, Reg::T2, Reg::T3);
+        self.emit_r(AluRKind::Mul, Reg::A0, Reg::T0, Reg::A0);
+    }
+
+    fn emit_print_dynamic_u64(&mut self, target: Reg) {
+        let label_loop = self.next_label("print_u64_loop");
+        let label_nonzero = self.next_label("print_u64_nonzero");
+        let label_zero = self.next_label("print_u64_zero");
+        let label_emit = self.next_label("print_u64_emit");
+        let label_restore = self.next_label("print_u64_restore");
+
+        self.push_reg(Reg::S2);
+        self.push_reg(Reg::A0);
+        self.push_reg(Reg::A1);
+        self.emit_load_imm(Reg::S2, 0);
+
+        self.emit_branch(BranchKind::Bne, Reg::A1, Reg::Zero, &label_nonzero);
+        self.emit_branch(BranchKind::Bne, Reg::A0, Reg::Zero, &label_nonzero);
+        self.program.label(AsmSection::Text, &label_zero);
+        load_mmio_base(&mut self.program, Reg::T6);
+        self.emit_load_imm(Reg::T5, 48);
+        self.program.emit_inst(
+            AsmSection::Text,
+            Instruction::Sw {
+                rs2: Reg::T5,
+                rs1: Reg::T6,
+                off: Expr::from_i32(8),
+            },
+        );
+        self.emit_jump(&label_restore);
+
+        self.program.label(AsmSection::Text, &label_nonzero);
+        self.program.label(AsmSection::Text, &label_loop);
+        self.emit_divide_u64_by_10(); // qlo=t0, qhi=t1, rem=t2
+        self.emit_load_imm(Reg::T3, 48);
+        self.emit_r(AluRKind::Add, Reg::T2, Reg::T2, Reg::T3);
+        self.push_reg(Reg::T2);
+        self.emit_load_imm(Reg::T3, 1);
+        self.emit_r(AluRKind::Add, Reg::S2, Reg::S2, Reg::T3);
+        mov(&mut self.program, Reg::A0, Reg::T0);
+        mov(&mut self.program, Reg::A1, Reg::T1);
+        self.emit_branch(BranchKind::Bne, Reg::A1, Reg::Zero, &label_loop);
+        self.emit_branch(BranchKind::Bne, Reg::A0, Reg::Zero, &label_loop);
+
+        self.program.label(AsmSection::Text, &label_emit);
+        self.emit_branch(BranchKind::Beq, Reg::S2, Reg::Zero, &label_restore);
+        self.pop_reg(Reg::T5);
+        load_mmio_base(&mut self.program, Reg::T6);
+        self.program.emit_inst(
+            AsmSection::Text,
+            Instruction::Sw {
+                rs2: Reg::T5,
+                rs1: Reg::T6,
+                off: Expr::from_i32(8),
+            },
+        );
+        self.emit_load_imm(Reg::T3, -1);
+        self.emit_r(AluRKind::Add, Reg::S2, Reg::S2, Reg::T3);
+        self.emit_jump(&label_emit);
+
+        self.program.label(AsmSection::Text, &label_restore);
+        self.pop_reg(Reg::A1);
+        self.pop_reg(Reg::A0);
+        self.pop_reg(Reg::S2);
+        if target != Reg::A0 {
+            mov(&mut self.program, target, Reg::A0);
+        }
+    }
+
+    fn emit_divide_u64_by_10(&mut self) {
+        self.emit_load_imm(Reg::T6, 10);
+        self.emit_r(AluRKind::Divu, Reg::T1, Reg::A1, Reg::T6);
+        self.emit_r(AluRKind::Remu, Reg::T3, Reg::A1, Reg::T6);
+        self.emit_r(AluRKind::Divu, Reg::T0, Reg::A0, Reg::T6);
+        self.emit_r(AluRKind::Remu, Reg::T2, Reg::A0, Reg::T6);
+
+        self.emit_load_imm(Reg::T6, 429_496_729);
+        self.emit_r(AluRKind::Mul, Reg::T4, Reg::T3, Reg::T6);
+        self.emit_r(AluRKind::Add, Reg::T0, Reg::T0, Reg::T4);
+
+        self.emit_load_imm(Reg::T6, 6);
+        self.emit_r(AluRKind::Mul, Reg::T4, Reg::T3, Reg::T6);
+        self.emit_r(AluRKind::Add, Reg::T2, Reg::T2, Reg::T4);
+
+        self.emit_load_imm(Reg::T6, 10);
+        self.emit_r(AluRKind::Divu, Reg::T4, Reg::T2, Reg::T6);
+        self.emit_r(AluRKind::Remu, Reg::T2, Reg::T2, Reg::T6);
+        self.emit_r(AluRKind::Add, Reg::T0, Reg::T0, Reg::T4);
+    }
+
+    fn lookup_var(&self, name: &str, env: &Env) -> Option<VarInfo> {
+        env.lookup(name)
+            .or_else(|| self.global_vars.get(name).cloned())
+    }
+
+    fn define_global(&mut self, name: &str, kind: ValueKind) -> VarInfo {
         if let Some(existing) = self.global_vars.get(name) {
             return existing.clone();
         }
@@ -870,9 +1440,91 @@ impl Compiler {
         let label = format!("__g_{}_{}", sanitize(name), self.next_global_id);
         self.next_global_id += 1;
         self.program.label(AsmSection::Data, &label);
-        self.program.emit_data(AsmSection::Data, DataItem::Word(0));
-        self.global_vars.insert(name.to_string(), label.clone());
-        label
+        for _ in 0..kind.width_words() {
+            self.program.emit_data(AsmSection::Data, DataItem::Word(0));
+        }
+        let info = VarInfo {
+            loc: VarLoc::Global(label),
+            kind,
+        };
+        self.global_vars.insert(name.to_string(), info.clone());
+        info
+    }
+
+    fn compile_store_value(
+        &mut self,
+        value: &LExpr,
+        target: Reg,
+        env: &mut Env,
+        info: &VarInfo,
+    ) -> Result<(), String> {
+        if info.kind == ValueKind::I64 {
+            self.compile_i64_expr(value, env)?;
+            self.emit_store_info_pair(Reg::A0, Reg::A1, info);
+            if target != Reg::A0 {
+                mov(&mut self.program, target, Reg::A0);
+            }
+        } else {
+            self.compile_expr(value, target, env)?;
+            self.emit_store_to_loc(target, &info.loc);
+        }
+        Ok(())
+    }
+
+    fn emit_load_from_info_pair(&mut self, lo: Reg, info: &VarInfo) {
+        match &info.loc {
+            VarLoc::Global(label) => {
+                self.emit_load_addr(Reg::T6, label);
+                self.program.emit_inst(
+                    AsmSection::Text,
+                    Instruction::Lw {
+                        rd: lo,
+                        rs1: Reg::T6,
+                        off: Expr::from_i32(0),
+                    },
+                );
+                self.program.emit_inst(
+                    AsmSection::Text,
+                    Instruction::Lw {
+                        rd: Reg::A1,
+                        rs1: Reg::T6,
+                        off: Expr::from_i32(4),
+                    },
+                );
+            }
+            VarLoc::Frame(offset) => {
+                self.emit_load_frame(lo, *offset);
+                self.emit_load_frame(Reg::A1, *offset + 4);
+            }
+        }
+    }
+
+    fn emit_store_info_pair(&mut self, lo: Reg, hi: Reg, info: &VarInfo) {
+        match &info.loc {
+            VarLoc::Global(label) => {
+                self.emit_load_addr(Reg::T6, label);
+                self.program.emit_inst(
+                    AsmSection::Text,
+                    Instruction::Sw {
+                        rs2: lo,
+                        rs1: Reg::T6,
+                        off: Expr::from_i32(0),
+                    },
+                );
+                self.program.emit_inst(
+                    AsmSection::Text,
+                    Instruction::Sw {
+                        rs2: hi,
+                        rs1: Reg::T6,
+                        off: Expr::from_i32(4),
+                    },
+                );
+            }
+            VarLoc::Frame(offset) => {
+                self.emit_store_frame(lo, *offset);
+                self.emit_store_frame(hi, *offset + 4);
+            }
+        }
     }
 
     fn intern_string(&mut self, text: &str) -> String {
@@ -893,6 +1545,87 @@ impl Compiler {
         let label = format!("__{}_{}", prefix, self.next_label_id);
         self.next_label_id += 1;
         label
+    }
+
+    fn interrupt_context_regs() -> [Reg; 30] {
+        [
+            Reg::Ra,
+            Reg::Gp,
+            Reg::Tp,
+            Reg::T0,
+            Reg::T1,
+            Reg::T2,
+            Reg::S0,
+            Reg::S1,
+            Reg::A0,
+            Reg::A1,
+            Reg::A2,
+            Reg::A3,
+            Reg::A4,
+            Reg::A5,
+            Reg::A6,
+            Reg::A7,
+            Reg::S2,
+            Reg::S3,
+            Reg::S4,
+            Reg::S5,
+            Reg::S6,
+            Reg::S7,
+            Reg::S8,
+            Reg::S9,
+            Reg::S10,
+            Reg::S11,
+            Reg::T3,
+            Reg::T4,
+            Reg::T5,
+            Reg::T6,
+        ]
+    }
+
+    fn emit_interrupt_context_save(&mut self) {
+        let regs = Self::interrupt_context_regs();
+        let bytes = (regs.len() as i32) * 4;
+        self.program.emit_inst(
+            AsmSection::Text,
+            Instruction::Addi {
+                rd: Reg::Sp,
+                rs1: Reg::Sp,
+                imm: Expr::from_i32(-bytes),
+            },
+        );
+        for (index, reg) in regs.iter().copied().enumerate() {
+            self.program.emit_inst(
+                AsmSection::Text,
+                Instruction::Sw {
+                    rs2: reg,
+                    rs1: Reg::Sp,
+                    off: Expr::from_i32((index as i32) * 4),
+                },
+            );
+        }
+    }
+
+    fn emit_interrupt_context_restore(&mut self) {
+        let regs = Self::interrupt_context_regs();
+        let bytes = (regs.len() as i32) * 4;
+        for (index, reg) in regs.iter().copied().enumerate() {
+            self.program.emit_inst(
+                AsmSection::Text,
+                Instruction::Lw {
+                    rd: reg,
+                    rs1: Reg::Sp,
+                    off: Expr::from_i32((index as i32) * 4),
+                },
+            );
+        }
+        self.program.emit_inst(
+            AsmSection::Text,
+            Instruction::Addi {
+                rd: Reg::Sp,
+                rs1: Reg::Sp,
+                imm: Expr::from_i32(bytes),
+            },
+        );
     }
 
     fn emit_prologue(&mut self, frame_bytes: i32) {
@@ -969,6 +1702,41 @@ impl Compiler {
                 rd: Reg::Zero,
                 rs1: Reg::Ra,
                 off: Expr::from_i32(0),
+            },
+        );
+    }
+
+    fn emit_epilogue_without_return(&mut self, frame_bytes: i32) {
+        self.program.emit_inst(
+            AsmSection::Text,
+            Instruction::Lw {
+                rd: Reg::Ra,
+                rs1: Reg::S1,
+                off: Expr::from_i32(-8),
+            },
+        );
+        self.program.emit_inst(
+            AsmSection::Text,
+            Instruction::Lw {
+                rd: Reg::T0,
+                rs1: Reg::S1,
+                off: Expr::from_i32(-4),
+            },
+        );
+        self.program.emit_inst(
+            AsmSection::Text,
+            Instruction::Addi {
+                rd: Reg::Sp,
+                rs1: Reg::S1,
+                imm: Expr::from_i32(frame_bytes),
+            },
+        );
+        self.program.emit_inst(
+            AsmSection::Text,
+            Instruction::Addi {
+                rd: Reg::S1,
+                rs1: Reg::T0,
+                imm: Expr::from_i32(0),
             },
         );
     }
@@ -1135,114 +1903,227 @@ fn arg_reg(index: usize) -> Result<Reg, String> {
     }
 }
 
-fn count_let_slots_in_body(body: &[LExpr]) -> usize {
-    body.iter().map(count_let_slots_in_expr).sum()
+fn count_let_slots_in_body(body: &[LExpr], compiler: &Compiler) -> usize {
+    body.iter()
+        .map(|expr| count_let_slots_in_expr(expr, compiler))
+        .sum()
 }
 
-fn count_let_slots_in_expr(expr: &LExpr) -> usize {
+fn count_let_slots_in_expr(expr: &LExpr, compiler: &Compiler) -> usize {
     match expr {
         LExpr::Number(_)
-        | LExpr::I64(_)
         | LExpr::String(_)
         | LExpr::Bool(_)
         | LExpr::Nil
         | LExpr::Ident(_)
         | LExpr::ReadChar
         | LExpr::ReadLine
+        | LExpr::ReadInputData
+        | LExpr::HandlerDone
         | LExpr::Halt => 0,
-        LExpr::Setq { value, .. } => count_let_slots_in_expr(value),
+        LExpr::Cast { value, .. } => count_let_slots_in_expr(value, compiler),
+        LExpr::Setq { value, .. } => count_let_slots_in_expr(value, compiler),
         LExpr::If {
             cond,
             then_branch,
             else_branch,
         } => {
-            count_let_slots_in_expr(cond)
-                + count_let_slots_in_expr(then_branch)
-                + count_let_slots_in_expr(else_branch)
+            count_let_slots_in_expr(cond, compiler)
+                + count_let_slots_in_expr(then_branch, compiler)
+                + count_let_slots_in_expr(else_branch, compiler)
         }
-        LExpr::Begin(items) => items.iter().map(count_let_slots_in_expr).sum(),
+        LExpr::Begin(items) => items
+            .iter()
+            .map(|expr| count_let_slots_in_expr(expr, compiler))
+            .sum(),
         LExpr::Let { bindings, body } => {
-            bindings.len()
-                + bindings
+            bindings
+                .iter()
+                .map(|binding| {
+                    ValueKind::from_type_name(binding.type_ann).width_words()
+                        + count_let_slots_in_expr(&binding.value, compiler)
+                })
+                .sum::<usize>()
+                + body
                     .iter()
-                    .map(|binding| count_let_slots_in_expr(&binding.value))
+                    .map(|expr| count_let_slots_in_expr(expr, compiler))
                     .sum::<usize>()
-                + body.iter().map(count_let_slots_in_expr).sum::<usize>()
         }
         LExpr::Loop {
             cond,
             body,
             finally,
         } => {
-            count_let_slots_in_expr(cond)
-                + body.iter().map(count_let_slots_in_expr).sum::<usize>()
-                + count_let_slots_in_expr(finally)
+            count_let_slots_in_expr(cond, compiler)
+                + body
+                    .iter()
+                    .map(|expr| count_let_slots_in_expr(expr, compiler))
+                    .sum::<usize>()
+                + count_let_slots_in_expr(finally, compiler)
         }
-        LExpr::Print(value) => count_let_slots_in_expr(value),
-        LExpr::Call { args, .. } => args.iter().map(count_let_slots_in_expr).sum(),
+        LExpr::Print(value) | LExpr::PrintStr(value) => count_let_slots_in_expr(value, compiler),
+        LExpr::Call { args, .. } => args
+            .iter()
+            .map(|arg| count_let_slots_in_expr(arg, compiler))
+            .sum(),
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum ValueKind {
-    Int,
-    I64,
-    String,
-    Unknown,
-}
-
-fn infer_expr_kind(expr: &LExpr) -> ValueKind {
-    match expr {
-        LExpr::Number(_) | LExpr::Bool(_) | LExpr::Nil | LExpr::ReadChar | LExpr::Halt => {
-            ValueKind::Int
-        }
-        LExpr::I64(_) => ValueKind::I64,
-        LExpr::String(_) | LExpr::ReadLine => ValueKind::String,
-        LExpr::Ident(_) => ValueKind::Unknown,
-        LExpr::Setq { value, .. } => infer_expr_kind(value),
-        LExpr::If {
-            then_branch,
-            else_branch,
-            ..
-        } => {
-            let left = infer_expr_kind(then_branch);
-            let right = infer_expr_kind(else_branch);
-            if left == right {
-                left
-            } else {
-                ValueKind::Unknown
-            }
-        }
-        LExpr::Begin(items) => items
-            .last()
-            .map(infer_expr_kind)
-            .unwrap_or(ValueKind::Unknown),
-        LExpr::Let { body, .. } => body
-            .last()
-            .map(infer_expr_kind)
-            .unwrap_or(ValueKind::Unknown),
-        LExpr::Loop { finally, .. } => infer_expr_kind(finally),
-        LExpr::Print(value) => infer_expr_kind(value),
-        LExpr::Call { callee, args } => match callee {
-            Callee::Builtin(name) => match name.as_str() {
-                "print-str" => ValueKind::String,
-                "strlen" | "strget" | "strset" | "=" | "!=" | "<" | "<=" | ">" | ">=" | "and"
-                | "or" | "not" => ValueKind::Int,
-                "+" | "-" | "*" | "/" | "%" | "bit-and" | "bit-or" | "bit-xor" | "shl" | "shr"
-                | "sar" => {
-                    if args
-                        .iter()
-                        .any(|arg| infer_expr_kind(arg) == ValueKind::I64)
-                    {
-                        ValueKind::I64
-                    } else {
-                        ValueKind::Int
-                    }
+impl Compiler {
+    fn infer_expr_kind_scoped(&self, expr: &LExpr, env: &Env) -> ValueKind {
+        match expr {
+            LExpr::Ident(name) => self
+                .lookup_var(name, env)
+                .map(|info| info.kind)
+                .unwrap_or(ValueKind::Unknown),
+            LExpr::Cast { target_type, .. } => ValueKind::from_type_name(*target_type),
+            LExpr::Setq { type_ann, .. } => ValueKind::from_type_name(*type_ann),
+            LExpr::If {
+                then_branch,
+                else_branch,
+                ..
+            } => {
+                let left = self.infer_expr_kind_scoped(then_branch, env);
+                let right = self.infer_expr_kind_scoped(else_branch, env);
+                if left == right {
+                    left
+                } else if left == ValueKind::I64 && right == ValueKind::Int
+                    || left == ValueKind::Int && right == ValueKind::I64
+                {
+                    ValueKind::I64
+                } else {
+                    ValueKind::Unknown
                 }
-                _ => ValueKind::Unknown,
+            }
+            LExpr::Begin(items) => items
+                .last()
+                .map(|expr| self.infer_expr_kind_scoped(expr, env))
+                .unwrap_or(ValueKind::Unknown),
+            LExpr::Let { bindings, body } => {
+                let mut scoped = env.clone();
+                scoped.push_scope();
+                for binding in bindings {
+                    let kind = ValueKind::from_type_name(binding.type_ann);
+                    let offset = scoped.alloc_frame_slots(kind.width_words());
+                    scoped.insert_current(
+                        binding.name.clone(),
+                        VarInfo {
+                            loc: VarLoc::Frame(offset),
+                            kind,
+                        },
+                    );
+                }
+                body.last()
+                    .map(|expr| self.infer_expr_kind_scoped(expr, &scoped))
+                    .unwrap_or(ValueKind::Unknown)
+            }
+            LExpr::Loop { finally, .. } => self.infer_expr_kind_scoped(finally, env),
+            LExpr::Print(value) => self.infer_expr_kind_scoped(value, env),
+            LExpr::PrintStr(_) => ValueKind::String,
+            LExpr::Call { callee, args } => match callee {
+                Callee::Builtin(name) => match name.as_str() {
+                    "strlen" | "strget" | "strset" | "=" | "!=" | "<" | "<=" | ">" | ">="
+                    | "and" | "or" | "not" => ValueKind::Int,
+                    "+" | "-" | "*" | "/" | "%" | "bit-and" | "bit-or" | "bit-xor" | "shl"
+                    | "shr" | "sar" => {
+                        let mut saw_i64 = false;
+                        for arg in args {
+                            match self.infer_expr_kind_scoped(arg, env) {
+                                ValueKind::I64 => saw_i64 = true,
+                                _ => {}
+                            }
+                        }
+                        if saw_i64 {
+                            ValueKind::I64
+                        } else {
+                            ValueKind::Int
+                        }
+                    }
+                    _ => ValueKind::Unknown,
+                },
+                Callee::Ident(name) => self
+                    .function_sigs
+                    .get(name)
+                    .map(|sig| sig.return_kind)
+                    .unwrap_or(ValueKind::Unknown),
             },
-            Callee::Ident(_) => ValueKind::Unknown,
-        },
+            other => self.infer_expr_kind(other),
+        }
+    }
+
+    fn infer_expr_kind(&self, expr: &LExpr) -> ValueKind {
+        match expr {
+            LExpr::Number(_)
+            | LExpr::Bool(_)
+            | LExpr::Nil
+            | LExpr::ReadChar
+            | LExpr::ReadInputData
+            | LExpr::HandlerDone
+            | LExpr::Halt => ValueKind::Int,
+            LExpr::Cast { target_type, .. } => ValueKind::from_type_name(*target_type),
+            LExpr::String(_) | LExpr::ReadLine => ValueKind::String,
+            LExpr::Ident(name) => self
+                .global_vars
+                .get(name)
+                .map(|info| info.kind)
+                .unwrap_or(ValueKind::Unknown),
+            LExpr::Setq { type_ann, .. } => ValueKind::from_type_name(*type_ann),
+            LExpr::If {
+                then_branch,
+                else_branch,
+                ..
+            } => {
+                let left = self.infer_expr_kind(then_branch);
+                let right = self.infer_expr_kind(else_branch);
+                if left == right {
+                    left
+                } else if left == ValueKind::I64 && right == ValueKind::Int
+                    || left == ValueKind::Int && right == ValueKind::I64
+                {
+                    ValueKind::I64
+                } else {
+                    ValueKind::Unknown
+                }
+            }
+            LExpr::Begin(items) => items
+                .last()
+                .map(|expr| self.infer_expr_kind(expr))
+                .unwrap_or(ValueKind::Unknown),
+            LExpr::Let { body, .. } => body
+                .last()
+                .map(|expr| self.infer_expr_kind(expr))
+                .unwrap_or(ValueKind::Unknown),
+            LExpr::Loop { finally, .. } => self.infer_expr_kind(finally),
+            LExpr::Print(value) => self.infer_expr_kind(value),
+            LExpr::PrintStr(_) => ValueKind::String,
+            LExpr::Call { callee, args } => match callee {
+                Callee::Builtin(name) => match name.as_str() {
+                    "strlen" | "strget" | "strset" | "=" | "!=" | "<" | "<=" | ">" | ">="
+                    | "and" | "or" | "not" => ValueKind::Int,
+                    "+" | "-" | "*" | "/" | "%" | "bit-and" | "bit-or" | "bit-xor" | "shl"
+                    | "shr" | "sar" => {
+                        let mut saw_i64 = false;
+                        for arg in args {
+                            match self.infer_expr_kind(arg) {
+                                ValueKind::I64 => saw_i64 = true,
+                                _ => {}
+                            }
+                        }
+                        if saw_i64 {
+                            ValueKind::I64
+                        } else {
+                            ValueKind::Int
+                        }
+                    }
+                    _ => ValueKind::Unknown,
+                },
+                Callee::Ident(name) => self
+                    .function_sigs
+                    .get(name)
+                    .map(|sig| sig.return_kind)
+                    .unwrap_or(ValueKind::Unknown),
+            },
+        }
     }
 }
 
@@ -1279,7 +2160,8 @@ fn sanitize(name: &str) -> String {
 
 fn is_foldable_expr(expr: &LExpr) -> bool {
     match expr {
-        LExpr::Number(_) | LExpr::I64(_) | LExpr::Bool(_) | LExpr::Nil => true,
+        LExpr::Number(_) | LExpr::Bool(_) | LExpr::Nil => true,
+        LExpr::Cast { value, .. } => is_foldable_expr(value),
         LExpr::If {
             cond,
             then_branch,
@@ -1301,6 +2183,22 @@ fn const_i32(expr: &LExpr) -> Option<i32> {
     }
     match expr {
         LExpr::Number(value) => i32::try_from(*value).ok(),
+        LExpr::Cast {
+            target_type: TypeName::Int,
+            value,
+        }
+        | LExpr::Cast {
+            target_type: TypeName::Bool,
+            value,
+        } => const_i32(value),
+        LExpr::Cast {
+            target_type: TypeName::I64,
+            ..
+        }
+        | LExpr::Cast {
+            target_type: TypeName::String,
+            ..
+        } => None,
         LExpr::Bool(value) => Some(if *value { 1 } else { 0 }),
         LExpr::Nil => Some(0),
         LExpr::If {
@@ -1363,7 +2261,22 @@ fn const_i32(expr: &LExpr) -> Option<i32> {
 fn const_i64(expr: &LExpr) -> Option<i64> {
     match expr {
         LExpr::Number(value) => Some(*value),
-        LExpr::I64(value) => const_i64(value),
+        LExpr::Cast {
+            target_type: TypeName::I64,
+            value,
+        }
+        | LExpr::Cast {
+            target_type: TypeName::Int,
+            value,
+        }
+        | LExpr::Cast {
+            target_type: TypeName::Bool,
+            value,
+        } => const_i64(value),
+        LExpr::Cast {
+            target_type: TypeName::String,
+            ..
+        } => None,
         LExpr::Bool(value) => Some(if *value { 1 } else { 0 }),
         LExpr::Nil => Some(0),
         LExpr::If {
@@ -1425,7 +2338,11 @@ fn const_i64(expr: &LExpr) -> Option<i64> {
 
 fn is_i64_expr(expr: &LExpr) -> bool {
     match expr {
-        LExpr::I64(_) => true,
+        LExpr::Cast {
+            target_type: TypeName::I64,
+            ..
+        } => true,
+        LExpr::Cast { .. } => false,
         LExpr::Setq { value, .. } => is_i64_expr(value),
         LExpr::If {
             then_branch,
@@ -1436,6 +2353,7 @@ fn is_i64_expr(expr: &LExpr) -> bool {
         LExpr::Let { body, .. } => body.last().map(is_i64_expr).unwrap_or(false),
         LExpr::Loop { finally, .. } => is_i64_expr(finally),
         LExpr::Print(value) => is_i64_expr(value),
+        LExpr::PrintStr(_) => false,
         LExpr::Call {
             callee: Callee::Builtin(name),
             args,

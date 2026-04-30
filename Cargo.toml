@@ -1,5 +1,5 @@
 [package]
-name = "lab4-rust"
+name = "lispy"
 version = "0.1.0"
 edition = "2021"
 

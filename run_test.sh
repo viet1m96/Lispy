@@ -1,14 +1,53 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
-for x in {1..8}; do
-  echo "Running for 0$x ..."
-  cargo run -- compile-lisp examples/0${x}/0${x}*.lisp 0${x}.bin
-  cargo run -- run-lisp examples/0${x}/0${x}*.lisp 100000 > examples/0${x}/0${x}.txt
-  mv 0${x}.bin examples/0${x}
-  mv 0${x}.lst examples/0${x}
-done
+MAX_TICKS="${MAX_TICKS:-1000000}"
 
+run_case() {
+  local dir="$1"
+  local lisp_file="$2"
+  local out_base="$3"
+  local input_file="${4:-}"
 
-cargo run -- compile-lisp examples/prob1/prob1.lisp prob1.bin
-mv prob1.bin examples/prob1
-mv prob1.lst examples/prob1
+  local src="${dir}/${lisp_file}"
+  local bin="${dir}/${out_base}.bin"
+  local txt="${dir}/${out_base}.txt"
+
+  echo "Running ${dir} ..."
+
+  if [[ ! -f "$src" ]]; then
+    echo "error: missing Lisp file: $src" >&2
+    exit 1
+  fi
+
+  cargo run --quiet -- compile-lisp "$src" "$bin"
+
+  if [[ -n "$input_file" ]]; then
+    local input="${dir}/${input_file}"
+    if [[ ! -f "$input" ]]; then
+      echo "error: missing input file: $input" >&2
+      exit 1
+    fi
+    cargo run --quiet -- run-lisp "$src" "$input" "$MAX_TICKS" > "$txt"
+  else
+    cargo run --quiet -- run-lisp "$src" "$MAX_TICKS" > "$txt"
+  fi
+
+  echo "  wrote ${bin}"
+  echo "  wrote ${dir}/${out_base}.lst"
+  echo "  wrote ${txt}"
+  echo
+}
+
+run_case "examples/01_print_hello_world"          "01_hello.lisp"                       "01"
+run_case "examples/02_recursive_factorial"       "02_rec_factorial.lisp"               "02"
+run_case "examples/03_recursive_fibonacci"       "03_rec_fibonacci.lisp"               "03"
+run_case "examples/04_test_utility_for_strings"  "04_strings_static.lisp"              "04"
+run_case "examples/05_bubble_sort_a_string"      "05_sort_static_digits.lisp"          "05"
+run_case "examples/06_operations_with_64_bit_nums" "06_i64_basic.lisp"                 "06"
+run_case "examples/07_selection_sort_a_string"   "07_sort_static_words_as_chars.lisp"  "07"
+run_case "examples/08_prob1"                     "08_prob1.lisp"                       "prob1"
+run_case "examples/09_hello_user_name"           "09_hello_user_name.lisp"             "09" "input.txt"
+run_case "examples/10_print_input_string"        "10_print_input_string.lisp"          "10" "input.txt"
+
+echo "All tests finished."

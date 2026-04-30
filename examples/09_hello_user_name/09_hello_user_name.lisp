@@ -1,0 +1,5 @@
+(print-str "What is your name?\n")
+(setq name :string (read-line))
+(print-str "Hello, ")
+(print-str name)
+(print-str "!\n")

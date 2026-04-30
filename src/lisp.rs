@@ -24,7 +24,6 @@ const BUILTIN_NAMES: &[&str] = &[
     "strlen",
     "strget",
     "strset",
-    "print-str",
 ];
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -52,20 +51,50 @@ pub enum TopForm {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Defun {
     pub name: String,
-    pub params: Vec<String>,
+    pub params: Vec<Param>,
+    pub return_type: TypeName,
     pub body: Vec<Expr>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Param {
+    pub name: String,
+    pub type_ann: TypeName,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TypeName {
+    Int,
+    I64,
+    Bool,
+    String,
+}
+
+impl TypeName {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Int => ":int",
+            Self::I64 => ":i64",
+            Self::Bool => ":bool",
+            Self::String => ":string",
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Expr {
     Number(i64),
-    I64(Box<Expr>),
+    Cast {
+        target_type: TypeName,
+        value: Box<Expr>,
+    },
     String(String),
     Bool(bool),
     Nil,
     Ident(String),
     Setq {
         name: String,
+        type_ann: TypeName,
         value: Box<Expr>,
     },
     If {
@@ -84,8 +113,11 @@ pub enum Expr {
         finally: Box<Expr>,
     },
     Print(Box<Expr>),
+    PrintStr(Box<Expr>),
     ReadChar,
     ReadLine,
+    ReadInputData,
+    HandlerDone,
     Halt,
     Call {
         callee: Callee,
@@ -96,6 +128,7 @@ pub enum Expr {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Binding {
     pub name: String,
+    pub type_ann: TypeName,
     pub value: Expr,
 }
 
@@ -161,10 +194,12 @@ pub fn tokenize(source: &str) -> Result<Vec<Token>, String> {
                 let start = i;
                 i += 1;
                 let mut text = String::new();
+                let mut terminated = false;
                 while i < bytes.len() {
                     let ch = bytes[i] as char;
                     if ch == '"' {
                         i += 1;
+                        terminated = true;
                         break;
                     }
                     if ch == '\n' {
@@ -193,19 +228,7 @@ pub fn tokenize(source: &str) -> Result<Vec<Token>, String> {
                     text.push(ch);
                     i += 1;
                 }
-                if i > bytes.len() || !source[start + 1..].contains('"') {
-                    // defensive check in case loop exited because input ended
-                    if !matches!(
-                        tokens.last(),
-                        Some(Token {
-                            kind: TokenKind::String(_),
-                            ..
-                        })
-                    ) {
-                        // no-op; we only want a better error path before push below
-                    }
-                }
-                if i > bytes.len() {
+                if !terminated {
                     return Err(format!("unterminated string starting at byte {start}"));
                 }
                 tokens.push(Token {
@@ -304,12 +327,13 @@ impl Parser {
         self.expect_lparen()?;
         let mut params = Vec::new();
         while !self.peek_is_rparen() {
-            params.push(self.expect_identifier()?);
+            params.push(self.parse_param()?);
         }
         self.expect_rparen()?;
+        let return_type = self.expect_type_name()?;
         let body = self.parse_body_until_rparen()?;
         self.expect_rparen()?;
-        Ok(Defun { name, params, body })
+        Ok(Defun { name, params, return_type, body })
     }
 
     fn parse_expr(&mut self) -> Result<Expr, String> {
@@ -348,10 +372,12 @@ impl Parser {
         let expr = match head.as_str() {
             "setq" => {
                 let name = self.expect_identifier()?;
+                let type_ann = self.expect_type_name()?;
                 let value = self.parse_expr()?;
                 self.expect_rparen()?;
                 Expr::Setq {
                     name,
+                    type_ann,
                     value: Box::new(value),
                 }
             }
@@ -377,9 +403,10 @@ impl Parser {
                 while !self.peek_is_rparen() {
                     self.expect_lparen()?;
                     let name = self.expect_identifier()?;
+                    let type_ann = self.expect_type_name()?;
                     let value = self.parse_expr()?;
                     self.expect_rparen()?;
-                    bindings.push(Binding { name, value });
+                    bindings.push(Binding { name, type_ann, value });
                 }
                 self.expect_rparen()?;
                 let body = self.parse_body_until_rparen()?;
@@ -414,6 +441,11 @@ impl Parser {
                 self.expect_rparen()?;
                 Expr::Print(Box::new(value))
             }
+            "print-str" => {
+                let value = self.parse_expr()?;
+                self.expect_rparen()?;
+                Expr::PrintStr(Box::new(value))
+            }
             "read-char" => {
                 self.expect_rparen()?;
                 Expr::ReadChar
@@ -422,14 +454,49 @@ impl Parser {
                 self.expect_rparen()?;
                 Expr::ReadLine
             }
+            "read-input-data" => {
+                self.expect_rparen()?;
+                Expr::ReadInputData
+            }
+            "handler-done" => {
+                self.expect_rparen()?;
+                Expr::HandlerDone
+            }
             "halt" => {
                 self.expect_rparen()?;
                 Expr::Halt
             }
-            "i64" => {
+            "as-int" => {
                 let value = self.parse_expr()?;
                 self.expect_rparen()?;
-                Expr::I64(Box::new(value))
+                Expr::Cast {
+                    target_type: TypeName::Int,
+                    value: Box::new(value),
+                }
+            }
+            "as-i64" => {
+                let value = self.parse_expr()?;
+                self.expect_rparen()?;
+                Expr::Cast {
+                    target_type: TypeName::I64,
+                    value: Box::new(value),
+                }
+            }
+            "as-bool" => {
+                let value = self.parse_expr()?;
+                self.expect_rparen()?;
+                Expr::Cast {
+                    target_type: TypeName::Bool,
+                    value: Box::new(value),
+                }
+            }
+            "as-string" => {
+                let value = self.parse_expr()?;
+                self.expect_rparen()?;
+                Expr::Cast {
+                    target_type: TypeName::String,
+                    value: Box::new(value),
+                }
             }
             "defun" => {
                 return Err("defun is only allowed as a top-level form".to_string());
@@ -578,6 +645,31 @@ impl Parser {
             Err(format!("expected identifier, found '{name}'"))
         }
     }
+
+    fn parse_param(&mut self) -> Result<Param, String> {
+        self.expect_lparen()?;
+        let name = self.expect_identifier()?;
+        let type_ann = self.expect_type_name()?;
+        self.expect_rparen()?;
+        Ok(Param { name, type_ann })
+    }
+
+    fn expect_type_name(&mut self) -> Result<TypeName, String> {
+        let token = self.expect_symbol_any()?;
+        parse_type_name(&token).ok_or_else(|| {
+            format!("expected type annotation (:int, :i64, :bool, or :string), found '{token}'")
+        })
+    }
+}
+
+fn parse_type_name(name: &str) -> Option<TypeName> {
+    match name {
+        ":int" => Some(TypeName::Int),
+        ":i64" => Some(TypeName::I64),
+        ":bool" => Some(TypeName::Bool),
+        ":string" => Some(TypeName::String),
+        _ => None,
+    }
 }
 
 fn is_builtin_name(name: &str) -> bool {
@@ -615,10 +707,17 @@ fn render_top_form(form: &TopForm, depth: usize, out: &mut String) {
     match form {
         TopForm::Defun(defun) => {
             indent(depth, out);
+            let params = defun
+                .params
+                .iter()
+                .map(|param| format!("{} {}", param.name, param.type_ann.as_str()))
+                .collect::<Vec<_>>()
+                .join(", ");
             out.push_str(&format!(
-                "Defun {}({})\n",
+                "Defun {}({}) -> {}\n",
                 defun.name,
-                defun.params.join(", ")
+                params,
+                defun.return_type.as_str()
             ));
             for expr in &defun.body {
                 render_expr(expr, depth + 1, out);
@@ -634,9 +733,9 @@ fn render_expr(expr: &Expr, depth: usize, out: &mut String) {
             indent(depth, out);
             out.push_str(&format!("Number {value}\n"));
         }
-        Expr::I64(value) => {
+        Expr::Cast { target_type, value } => {
             indent(depth, out);
-            out.push_str("I64\n");
+            out.push_str(&format!("Cast {}\n", target_type.as_str()));
             render_expr(value, depth + 1, out);
         }
         Expr::String(text) => {
@@ -655,9 +754,9 @@ fn render_expr(expr: &Expr, depth: usize, out: &mut String) {
             indent(depth, out);
             out.push_str(&format!("Ident {name}\n"));
         }
-        Expr::Setq { name, value } => {
+        Expr::Setq { name, type_ann, value } => {
             indent(depth, out);
-            out.push_str(&format!("Setq {name}\n"));
+            out.push_str(&format!("Setq {name} {}\n", type_ann.as_str()));
             render_expr(value, depth + 1, out);
         }
         Expr::If {
@@ -691,7 +790,7 @@ fn render_expr(expr: &Expr, depth: usize, out: &mut String) {
             out.push_str("Bindings\n");
             for binding in bindings {
                 indent(depth + 2, out);
-                out.push_str(&format!("{}\n", binding.name));
+                out.push_str(&format!("{} {}\n", binding.name, binding.type_ann.as_str()));
                 render_expr(&binding.value, depth + 3, out);
             }
             indent(depth + 1, out);
@@ -724,6 +823,11 @@ fn render_expr(expr: &Expr, depth: usize, out: &mut String) {
             out.push_str("Print\n");
             render_expr(value, depth + 1, out);
         }
+        Expr::PrintStr(value) => {
+            indent(depth, out);
+            out.push_str("PrintStr\n");
+            render_expr(value, depth + 1, out);
+        }
         Expr::ReadChar => {
             indent(depth, out);
             out.push_str("ReadChar\n");
@@ -731,6 +835,14 @@ fn render_expr(expr: &Expr, depth: usize, out: &mut String) {
         Expr::ReadLine => {
             indent(depth, out);
             out.push_str("ReadLine\n");
+        }
+        Expr::ReadInputData => {
+            indent(depth, out);
+            out.push_str("ReadInputData\n");
+        }
+        Expr::HandlerDone => {
+            indent(depth, out);
+            out.push_str("HandlerDone\n");
         }
         Expr::Halt => {
             indent(depth, out);

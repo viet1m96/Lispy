@@ -6,6 +6,25 @@ pub const PRINT_INT_LABEL: &str = "__rt_print_int";
 pub const PRINT_PSTR_LABEL: &str = "__rt_print_pstr";
 pub const PRINT_VALUE_LABEL: &str = "__rt_print_value";
 pub const READ_LINE_LABEL: &str = "__rt_read_line";
+pub const READ_CHAR_LABEL: &str = "__rt_read_char";
+pub const DEFAULT_INPUT_HANDLER_LABEL: &str = "__default_input_handler";
+
+const INPUT_BUF_HEAD_LABEL: &str = "__rt_input_buf_head";
+const INPUT_BUF_TAIL_LABEL: &str = "__rt_input_buf_tail";
+const INPUT_BUF_LEN_LABEL: &str = "__rt_input_buf_len";
+const INPUT_BUF_DATA_LABEL: &str = "__rt_input_buf_data";
+const INPUT_BUF_CAPACITY: i32 = 16;
+
+const INPUT_HANDLER_CONTEXT_REGS: [Reg; 7] = [
+    Reg::T0,
+    Reg::T1,
+    Reg::T2,
+    Reg::T3,
+    Reg::T4,
+    Reg::T5,
+    Reg::T6,
+];
+const INPUT_HANDLER_CONTEXT_BYTES: i32 = (INPUT_HANDLER_CONTEXT_REGS.len() as i32) * 4;
 
 const HEAP_PTR_LABEL: &str = "__rt_heap_ptr";
 
@@ -15,6 +34,8 @@ pub fn emit_runtime(
     needs_print_pstr: bool,
     needs_print_value: bool,
     needs_read_line: bool,
+    needs_read_char: bool,
+    needs_default_input_handler: bool,
 ) {
     let needs_print_int = needs_print_int || needs_print_value;
     let needs_print_pstr = needs_print_pstr || needs_print_value;
@@ -36,12 +57,20 @@ pub fn emit_runtime(
             DataItem::Word(DEFAULT_MEMORY_LAYOUT.heap_base),
         );
     }
+    if needs_read_char || needs_read_line {
+        emit_read_char(program);
+    }
+    if needs_default_input_handler {
+        emit_default_input_handler(program);
+    }
+    if needs_read_char || needs_read_line || needs_default_input_handler {
+        emit_input_buffer_data(program);
+    }
 }
 
 fn emit_print_int(program: &mut AsmProgram) {
     program.label(AsmSection::Text, PRINT_INT_LABEL);
 
-    // Save original value so print returns the same value.
     program.emit_inst(
         AsmSection::Text,
         Instruction::Addi {
@@ -458,65 +487,81 @@ fn emit_print_value(program: &mut AsmProgram) {
 fn emit_read_line(program: &mut AsmProgram) {
     program.label(AsmSection::Text, READ_LINE_LABEL);
 
-    load_label_word(program, Reg::A0, HEAP_PTR_LABEL);
-    mov(program, Reg::T0, Reg::A0);
-    load_small(program, Reg::T1, 0);
     program.emit_inst(
         AsmSection::Text,
         Instruction::Addi {
-            rd: Reg::T2,
-            rs1: Reg::T0,
+            rd: Reg::Sp,
+            rs1: Reg::Sp,
+            imm: Expr::from_i32(-16),
+        },
+    );
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::Sw {
+            rs2: Reg::Ra,
+            rs1: Reg::Sp,
+            off: Expr::from_i32(0),
+        },
+    );
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::Sw {
+            rs2: Reg::S0,
+            rs1: Reg::Sp,
+            off: Expr::from_i32(4),
+        },
+    );
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::Sw {
+            rs2: Reg::S1,
+            rs1: Reg::Sp,
+            off: Expr::from_i32(8),
+        },
+    );
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::Sw {
+            rs2: Reg::S2,
+            rs1: Reg::Sp,
+            off: Expr::from_i32(12),
+        },
+    );
+
+    load_label_word(program, Reg::S0, HEAP_PTR_LABEL);
+
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::Addi {
+            rd: Reg::S1,
+            rs1: Reg::S0,
             imm: Expr::from_i32(4),
         },
     );
-    load_mmio_base(program, Reg::T6);
+
+    load_small(program, Reg::S2, 0);
 
     let label_loop = "__rt_read_line_loop";
     let label_done = "__rt_read_line_done";
     let label_store = "__rt_read_line_store";
 
     program.label(AsmSection::Text, label_loop);
+
     program.emit_inst(
         AsmSection::Text,
-        Instruction::Lw {
-            rd: Reg::T3,
-            rs1: Reg::T6,
-            off: Expr::from_i32(0),
+        Instruction::Jal {
+            rd: Reg::Ra,
+            off: Expr::pcrel(READ_CHAR_LABEL),
         },
     );
-    program.emit_inst(
-        AsmSection::Text,
-        Instruction::Branch {
-            op: BranchKind::Beq,
-            rs1: Reg::T3,
-            rs2: Reg::Zero,
-            off: Expr::pcrel(label_done),
-        },
-    );
-    program.emit_inst(
-        AsmSection::Text,
-        Instruction::Lw {
-            rd: Reg::T4,
-            rs1: Reg::T6,
-            off: Expr::from_i32(4),
-        },
-    );
-    load_small(program, Reg::T5, 1);
-    program.emit_inst(
-        AsmSection::Text,
-        Instruction::Sw {
-            rs2: Reg::T5,
-            rs1: Reg::T6,
-            off: Expr::from_i32(16),
-        },
-    );
-    load_small(program, Reg::T5, 10);
+
+    load_small(program, Reg::T0, 10);
     program.emit_inst(
         AsmSection::Text,
         Instruction::Branch {
             op: BranchKind::Bne,
-            rs1: Reg::T4,
-            rs2: Reg::T5,
+            rs1: Reg::A0,
+            rs2: Reg::T0,
             off: Expr::pcrel(label_store),
         },
     );
@@ -529,30 +574,34 @@ fn emit_read_line(program: &mut AsmProgram) {
     );
 
     program.label(AsmSection::Text, label_store);
+
     program.emit_inst(
         AsmSection::Text,
         Instruction::Sw {
-            rs2: Reg::T4,
-            rs1: Reg::T2,
+            rs2: Reg::A0,
+            rs1: Reg::S1,
             off: Expr::from_i32(0),
         },
     );
+
     program.emit_inst(
         AsmSection::Text,
         Instruction::Addi {
-            rd: Reg::T2,
-            rs1: Reg::T2,
+            rd: Reg::S1,
+            rs1: Reg::S1,
             imm: Expr::from_i32(4),
         },
     );
+
     program.emit_inst(
         AsmSection::Text,
         Instruction::Addi {
-            rd: Reg::T1,
-            rs1: Reg::T1,
+            rd: Reg::S2,
+            rs1: Reg::S2,
             imm: Expr::from_i32(1),
         },
     );
+
     program.emit_inst(
         AsmSection::Text,
         Instruction::Jal {
@@ -562,16 +611,60 @@ fn emit_read_line(program: &mut AsmProgram) {
     );
 
     program.label(AsmSection::Text, label_done);
+
     program.emit_inst(
         AsmSection::Text,
         Instruction::Sw {
-            rs2: Reg::T1,
-            rs1: Reg::T0,
+            rs2: Reg::S2,
+            rs1: Reg::S0,
             off: Expr::from_i32(0),
         },
     );
-    store_label_word(program, Reg::T2, HEAP_PTR_LABEL);
-    mov(program, Reg::A0, Reg::T0);
+
+    store_label_word(program, Reg::S1, HEAP_PTR_LABEL);
+
+    mov(program, Reg::A0, Reg::S0);
+
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::Lw {
+            rd: Reg::Ra,
+            rs1: Reg::Sp,
+            off: Expr::from_i32(0),
+        },
+    );
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::Lw {
+            rd: Reg::S0,
+            rs1: Reg::Sp,
+            off: Expr::from_i32(4),
+        },
+    );
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::Lw {
+            rd: Reg::S1,
+            rs1: Reg::Sp,
+            off: Expr::from_i32(8),
+        },
+    );
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::Lw {
+            rd: Reg::S2,
+            rs1: Reg::Sp,
+            off: Expr::from_i32(12),
+        },
+    );
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::Addi {
+            rd: Reg::Sp,
+            rs1: Reg::Sp,
+            imm: Expr::from_i32(16),
+        },
+    );
     program.emit_inst(
         AsmSection::Text,
         Instruction::Jalr {
@@ -581,7 +674,6 @@ fn emit_read_line(program: &mut AsmProgram) {
         },
     );
 }
-
 fn load_label_addr(program: &mut AsmProgram, rd: Reg, label: &str) {
     program.emit_inst(
         AsmSection::Text,
@@ -681,4 +773,310 @@ pub fn mov(program: &mut AsmProgram, rd: Reg, rs: Reg) {
             imm: Expr::from_i32(0),
         },
     );
+}
+
+fn emit_input_handler_context_save(program: &mut AsmProgram) {
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::Addi {
+            rd: Reg::Sp,
+            rs1: Reg::Sp,
+            imm: Expr::from_i32(-INPUT_HANDLER_CONTEXT_BYTES),
+        },
+    );
+    for (index, reg) in INPUT_HANDLER_CONTEXT_REGS.iter().copied().enumerate() {
+        program.emit_inst(
+            AsmSection::Text,
+            Instruction::Sw {
+                rs2: reg,
+                rs1: Reg::Sp,
+                off: Expr::from_i32((index as i32) * 4),
+            },
+        );
+    }
+}
+
+fn emit_input_handler_context_restore(program: &mut AsmProgram) {
+    for (index, reg) in INPUT_HANDLER_CONTEXT_REGS.iter().copied().enumerate() {
+        program.emit_inst(
+            AsmSection::Text,
+            Instruction::Lw {
+                rd: reg,
+                rs1: Reg::Sp,
+                off: Expr::from_i32((index as i32) * 4),
+            },
+        );
+    }
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::Addi {
+            rd: Reg::Sp,
+            rs1: Reg::Sp,
+            imm: Expr::from_i32(INPUT_HANDLER_CONTEXT_BYTES),
+        },
+    );
+}
+
+fn emit_read_char(program: &mut AsmProgram) {
+    let label_wait = "__rt_read_char_wait";
+    program.label(AsmSection::Text, READ_CHAR_LABEL);
+
+    program.label(AsmSection::Text, label_wait);
+
+    load_label_addr(program, Reg::T5, INPUT_BUF_HEAD_LABEL);
+
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::Lw {
+            rd: Reg::T0,
+            rs1: Reg::T5,
+            off: Expr::from_i32(0),
+        },
+    );
+
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::Lw {
+            rd: Reg::T1,
+            rs1: Reg::T5,
+            off: Expr::from_i32(4),
+        },
+    );
+
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::Branch {
+            op: BranchKind::Beq,
+            rs1: Reg::T0,
+            rs2: Reg::T1,
+            off: Expr::pcrel(label_wait),
+        },
+    );
+
+    load_small(program, Reg::T3, 2);
+
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::AluR {
+            op: AluRKind::Sll,
+            rd: Reg::T4,
+            rs1: Reg::T0,
+            rs2: Reg::T3,
+        },
+    );
+
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::Addi {
+            rd: Reg::T2,
+            rs1: Reg::T5,
+            imm: Expr::from_i32(12),
+        },
+    );
+
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::AluR {
+            op: AluRKind::Add,
+            rd: Reg::T2,
+            rs1: Reg::T2,
+            rs2: Reg::T4,
+        },
+    );
+
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::Lw {
+            rd: Reg::A0,
+            rs1: Reg::T2,
+            off: Expr::from_i32(0),
+        },
+    );
+
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::Addi {
+            rd: Reg::T0,
+            rs1: Reg::T0,
+            imm: Expr::from_i32(1),
+        },
+    );
+
+    load_small(program, Reg::T3, INPUT_BUF_CAPACITY - 1);
+
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::AluR {
+            op: AluRKind::And,
+            rd: Reg::T0,
+            rs1: Reg::T0,
+            rs2: Reg::T3,
+        },
+    );
+
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::Sw {
+            rs2: Reg::T0,
+            rs1: Reg::T5,
+            off: Expr::from_i32(0),
+        },
+    );
+
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::Jalr {
+            rd: Reg::Zero,
+            rs1: Reg::Ra,
+            off: Expr::from_i32(0),
+        },
+    );
+}
+
+fn emit_default_input_handler(program: &mut AsmProgram) {
+    let label_done = "__default_input_handler_done";
+    program.label(AsmSection::Text, DEFAULT_INPUT_HANDLER_LABEL);
+
+    emit_input_handler_context_save(program);
+
+    load_mmio_base(program, Reg::T6);
+
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::Lw {
+            rd: Reg::T0,
+            rs1: Reg::T6,
+            off: Expr::from_i32(4),
+        },
+    );
+
+    load_small(program, Reg::T5, 1);
+
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::Sw {
+            rs2: Reg::T5,
+            rs1: Reg::T6,
+            off: Expr::from_i32(16),
+        },
+    );
+
+    load_label_addr(program, Reg::T3, INPUT_BUF_HEAD_LABEL);
+
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::Lw {
+            rd: Reg::T4,
+            rs1: Reg::T3,
+            off: Expr::from_i32(0),
+        },
+    );
+
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::Lw {
+            rd: Reg::T2,
+            rs1: Reg::T3,
+            off: Expr::from_i32(4),
+        },
+    );
+
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::Addi {
+            rd: Reg::T1,
+            rs1: Reg::T2,
+            imm: Expr::from_i32(1),
+        },
+    );
+
+    load_small(program, Reg::T5, INPUT_BUF_CAPACITY - 1);
+
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::AluR {
+            op: AluRKind::And,
+            rd: Reg::T1,
+            rs1: Reg::T1,
+            rs2: Reg::T5,
+        },
+    );
+
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::Branch {
+            op: BranchKind::Beq,
+            rs1: Reg::T1,
+            rs2: Reg::T4,
+            off: Expr::pcrel(label_done),
+        },
+    );
+
+    load_small(program, Reg::T6, 2);
+
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::AluR {
+            op: AluRKind::Sll,
+            rd: Reg::T5,
+            rs1: Reg::T2,
+            rs2: Reg::T6,
+        },
+    );
+
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::Addi {
+            rd: Reg::T6,
+            rs1: Reg::T3,
+            imm: Expr::from_i32(12),
+        },
+    );
+
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::AluR {
+            op: AluRKind::Add,
+            rd: Reg::T6,
+            rs1: Reg::T6,
+            rs2: Reg::T5,
+        },
+    );
+
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::Sw {
+            rs2: Reg::T0,
+            rs1: Reg::T6,
+            off: Expr::from_i32(0),
+        },
+    );
+
+    program.emit_inst(
+        AsmSection::Text,
+        Instruction::Sw {
+            rs2: Reg::T1,
+            rs1: Reg::T3,
+            off: Expr::from_i32(4),
+        },
+    );
+
+    program.label(AsmSection::Text, label_done);
+
+    emit_input_handler_context_restore(program);
+
+    program.emit_inst(AsmSection::Text, Instruction::Mret);
+}
+
+fn emit_input_buffer_data(program: &mut AsmProgram) {
+    program.label(AsmSection::Data, INPUT_BUF_HEAD_LABEL);
+    program.emit_data(AsmSection::Data, DataItem::Word(0));
+    program.label(AsmSection::Data, INPUT_BUF_TAIL_LABEL);
+    program.emit_data(AsmSection::Data, DataItem::Word(0));
+    program.label(AsmSection::Data, INPUT_BUF_LEN_LABEL);
+    program.emit_data(AsmSection::Data, DataItem::Word(0));
+    program.label(AsmSection::Data, INPUT_BUF_DATA_LABEL);
+    for _ in 0..INPUT_BUF_CAPACITY {
+        program.emit_data(AsmSection::Data, DataItem::Word(0));
+    }
 }

@@ -80,13 +80,14 @@ impl fmt::Display for Expr {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DataItem {
     Word(u32),
+    LabelAddr(String),
     PStr(String),
 }
 
 impl DataItem {
     pub fn size(&self) -> u32 {
         match self {
-            Self::Word(_) => 4,
+            Self::Word(_) | Self::LabelAddr(_) => 4,
             Self::PStr(text) => 4 + (text.chars().count() as u32) * 4,
         }
     }
@@ -94,6 +95,7 @@ impl DataItem {
     pub fn render(&self) -> String {
         match self {
             Self::Word(value) => format!(".word 0x{value:08x}"),
+            Self::LabelAddr(label) => format!(".word {label}"),
             Self::PStr(text) => format!(".pstr \"{}\"", escape_text(text)),
         }
     }
@@ -101,6 +103,7 @@ impl DataItem {
     pub fn encode(&self) -> Vec<u8> {
         match self {
             Self::Word(value) => value.to_le_bytes().to_vec(),
+            Self::LabelAddr(_) => panic!("label-backed data must be resolved by assemble_section"),
             Self::PStr(text) => encode_pstr(text),
         }
     }
@@ -226,7 +229,15 @@ impl AsmProgram {
                     cursor += INSTRUCTION_SIZE;
                 }
                 SectionItem::Data(data) => {
-                    let entry_bytes = data.encode();
+                    let entry_bytes = match data {
+                        DataItem::LabelAddr(label) => {
+                            let value = symbols
+                                .get(label)
+                                .ok_or_else(|| format!("missing label in data word: {label}"))?;
+                            value.to_le_bytes().to_vec()
+                        }
+                        _ => data.encode(),
+                    };
                     listing.push(ListingEntry {
                         address: cursor,
                         bytes: entry_bytes.clone(),
@@ -355,16 +366,6 @@ fn resolve_instruction(
             rd: *rd,
             rs1: *rs1,
             off: resolve_expr(off, address, symbols)?,
-        }),
-        Instruction::Csrrw { rd, csr, rs1 } => Ok(Instruction::Csrrw {
-            rd: *rd,
-            csr: *csr,
-            rs1: *rs1,
-        }),
-        Instruction::Csrrs { rd, csr, rs1 } => Ok(Instruction::Csrrs {
-            rd: *rd,
-            csr: *csr,
-            rs1: *rs1,
         }),
         Instruction::Mret => Ok(Instruction::Mret),
         Instruction::Halt => Ok(Instruction::Halt),

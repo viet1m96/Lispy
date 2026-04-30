@@ -152,48 +152,6 @@ impl fmt::Display for VReg {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Csr {
-    Mstatus,
-    Mtvec,
-    Mepc,
-    Mcause,
-    Raw(u16),
-}
-
-impl Csr {
-    pub fn number(self) -> u16 {
-        match self {
-            Csr::Mstatus => 0x300,
-            Csr::Mtvec => 0x305,
-            Csr::Mepc => 0x341,
-            Csr::Mcause => 0x342,
-            Csr::Raw(n) => n,
-        }
-    }
-
-    pub fn from_number(value: u16) -> Self {
-        match value {
-            0x300 => Self::Mstatus,
-            0x305 => Self::Mtvec,
-            0x341 => Self::Mepc,
-            0x342 => Self::Mcause,
-            other => Self::Raw(other),
-        }
-    }
-}
-
-impl fmt::Display for Csr {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Csr::Mstatus => write!(f, "mstatus"),
-            Csr::Mtvec => write!(f, "mtvec"),
-            Csr::Mepc => write!(f, "mepc"),
-            Csr::Mcause => write!(f, "mcause"),
-            Csr::Raw(value) => write!(f, "csr(0x{value:03x})"),
-        }
-    }
-}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BranchKind {
@@ -415,16 +373,6 @@ pub enum Instruction {
         rs1: Reg,
         off: Expr,
     },
-    Csrrw {
-        rd: Reg,
-        csr: Csr,
-        rs1: Reg,
-    },
-    Csrrs {
-        rd: Reg,
-        csr: Csr,
-        rs1: Reg,
-    },
     Mret,
     Halt,
     Vld {
@@ -493,20 +441,6 @@ impl Instruction {
                 let imm = expr_as_i12(off)?;
                 Ok(pack_i(imm, rs1.bits(), 0b000, rd.bits(), 0b1100111))
             }
-            Instruction::Csrrw { rd, csr, rs1 } => Ok(pack_i(
-                i32::from(csr.number()),
-                rs1.bits(),
-                0b001,
-                rd.bits(),
-                0b1110011,
-            )),
-            Instruction::Csrrs { rd, csr, rs1 } => Ok(pack_i(
-                i32::from(csr.number()),
-                rs1.bits(),
-                0b010,
-                rd.bits(),
-                0b1110011,
-            )),
             Instruction::Mret => Ok(pack_i(0x302, 0, 0b000, 0, 0b1110011)),
             Instruction::Halt => Ok(pack_i(0x0fff, 0, 0b000, 0, 0b1110011)),
             Instruction::Vld { vd, rs1, off } => {
@@ -580,16 +514,6 @@ impl Instruction {
                 rs1,
                 off: Expr::from_i32(extract_i_imm(word)),
             }),
-            0b1110011 if funct3 == 0b001 => Ok(Self::Csrrw {
-                rd,
-                csr: Csr::from_number(field12(word, 20) as u16),
-                rs1,
-            }),
-            0b1110011 if funct3 == 0b010 => Ok(Self::Csrrs {
-                rd,
-                csr: Csr::from_number(field12(word, 20) as u16),
-                rs1,
-            }),
             0b1110011 if funct3 == 0b000 && field12(word, 20) == 0x302 => Ok(Self::Mret),
             0b1110011 if funct3 == 0b000 && field12(word, 20) == 0x0fff => Ok(Self::Halt),
             0b0000111 if funct3 == 0b000 => Ok(Self::Vld {
@@ -626,8 +550,6 @@ impl Instruction {
             }
             Instruction::Jal { rd, off } => format!("jal {rd}, {off}"),
             Instruction::Jalr { rd, rs1, off } => format!("jalr {rd}, {off}({rs1})"),
-            Instruction::Csrrw { rd, csr, rs1 } => format!("csrrw {rd}, {csr}, {rs1}"),
-            Instruction::Csrrs { rd, csr, rs1 } => format!("csrrs {rd}, {csr}, {rs1}"),
             Instruction::Mret => "mret".to_string(),
             Instruction::Halt => "halt".to_string(),
             Instruction::Vld { vd, rs1, off } => format!("vld {vd}, {off}({rs1})"),
