@@ -152,7 +152,6 @@ impl fmt::Display for VReg {
     }
 }
 
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BranchKind {
     Beq,
@@ -566,7 +565,7 @@ fn expr_as_u20(expr: &Expr) -> Result<u32, String> {
         .resolved_i32()
         .ok_or_else(|| format!("instruction still has unresolved expression: {expr}"))?;
     let masked = value as i64;
-    if !(0..=(0x000f_ffff_i64)).contains(&masked) {
+    if !(0..=0x000f_ffff_i64).contains(&masked) {
         return Err(format!(
             "value does not fit U-immediate upper 20 bits: {value}"
         ));

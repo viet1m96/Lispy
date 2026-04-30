@@ -1909,7 +1909,7 @@ fn count_let_slots_in_body(body: &[LExpr], compiler: &Compiler) -> usize {
         .sum()
 }
 
-fn count_let_slots_in_expr(expr: &LExpr, compiler: &Compiler) -> usize {
+fn count_let_slots_in_expr(expr: &LExpr, _compiler: &Compiler) -> usize {
     match expr {
         LExpr::Number(_)
         | LExpr::String(_)
@@ -1921,32 +1921,32 @@ fn count_let_slots_in_expr(expr: &LExpr, compiler: &Compiler) -> usize {
         | LExpr::ReadInputData
         | LExpr::HandlerDone
         | LExpr::Halt => 0,
-        LExpr::Cast { value, .. } => count_let_slots_in_expr(value, compiler),
-        LExpr::Setq { value, .. } => count_let_slots_in_expr(value, compiler),
+        LExpr::Cast { value, .. } => count_let_slots_in_expr(value, _compiler),
+        LExpr::Setq { value, .. } => count_let_slots_in_expr(value, _compiler),
         LExpr::If {
             cond,
             then_branch,
             else_branch,
         } => {
-            count_let_slots_in_expr(cond, compiler)
-                + count_let_slots_in_expr(then_branch, compiler)
-                + count_let_slots_in_expr(else_branch, compiler)
+            count_let_slots_in_expr(cond, _compiler)
+                + count_let_slots_in_expr(then_branch, _compiler)
+                + count_let_slots_in_expr(else_branch, _compiler)
         }
         LExpr::Begin(items) => items
             .iter()
-            .map(|expr| count_let_slots_in_expr(expr, compiler))
+            .map(|expr| count_let_slots_in_expr(expr, _compiler))
             .sum(),
         LExpr::Let { bindings, body } => {
             bindings
                 .iter()
                 .map(|binding| {
                     ValueKind::from_type_name(binding.type_ann).width_words()
-                        + count_let_slots_in_expr(&binding.value, compiler)
+                        + count_let_slots_in_expr(&binding.value, _compiler)
                 })
                 .sum::<usize>()
                 + body
                     .iter()
-                    .map(|expr| count_let_slots_in_expr(expr, compiler))
+                    .map(|expr| count_let_slots_in_expr(expr, _compiler))
                     .sum::<usize>()
         }
         LExpr::Loop {
@@ -1954,17 +1954,17 @@ fn count_let_slots_in_expr(expr: &LExpr, compiler: &Compiler) -> usize {
             body,
             finally,
         } => {
-            count_let_slots_in_expr(cond, compiler)
+            count_let_slots_in_expr(cond, _compiler)
                 + body
                     .iter()
-                    .map(|expr| count_let_slots_in_expr(expr, compiler))
+                    .map(|expr| count_let_slots_in_expr(expr, _compiler))
                     .sum::<usize>()
-                + count_let_slots_in_expr(finally, compiler)
+                + count_let_slots_in_expr(finally, _compiler)
         }
-        LExpr::Print(value) | LExpr::PrintStr(value) => count_let_slots_in_expr(value, compiler),
+        LExpr::Print(value) | LExpr::PrintStr(value) => count_let_slots_in_expr(value, _compiler),
         LExpr::Call { args, .. } => args
             .iter()
-            .map(|arg| count_let_slots_in_expr(arg, compiler))
+            .map(|arg| count_let_slots_in_expr(arg, _compiler))
             .sum(),
     }
 }
@@ -2028,9 +2028,8 @@ impl Compiler {
                     | "shr" | "sar" => {
                         let mut saw_i64 = false;
                         for arg in args {
-                            match self.infer_expr_kind_scoped(arg, env) {
-                                ValueKind::I64 => saw_i64 = true,
-                                _ => {}
+                            if self.infer_expr_kind_scoped(arg, env) == ValueKind::I64 {
+                                saw_i64 = true;
                             }
                         }
                         if saw_i64 {
@@ -2104,9 +2103,8 @@ impl Compiler {
                     | "shr" | "sar" => {
                         let mut saw_i64 = false;
                         for arg in args {
-                            match self.infer_expr_kind(arg) {
-                                ValueKind::I64 => saw_i64 = true,
-                                _ => {}
+                            if self.infer_expr_kind(arg) == ValueKind::I64 {
+                                saw_i64 = true;
                             }
                         }
                         if saw_i64 {

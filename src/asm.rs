@@ -123,6 +123,12 @@ pub struct AsmProgram {
     items: BTreeMap<AsmSection, Vec<SectionItem>>,
 }
 
+impl Default for AsmProgram {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AsmProgram {
     pub fn new() -> Self {
         let mut items = BTreeMap::new();
@@ -276,7 +282,7 @@ impl AssembledProgram {
         for (name, address) in &self.symbols {
             out.push_str(&format!("{name:<20} 0x{address:08x}\n"));
         }
-        out.push_str("\n");
+        out.push('\n');
         out.push_str(&self.text.render_listing());
         out.push('\n');
         out.push_str(&self.rodata.render_listing());

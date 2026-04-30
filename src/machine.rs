@@ -60,27 +60,34 @@ impl Machine {
         })
     }
 
-    pub fn phase(&self) -> Phase { self.control_state.phase() }
+    pub fn phase(&self) -> Phase {
+        self.control_state.phase()
+    }
 
     pub fn clock_control(&mut self, reset: bool, next_state: Phase) {
         self.control_state.clock(reset, next_state);
     }
 
-    pub fn read_reg(&self, reg: Reg) -> u32 { self.register_file.read(reg) }
+    pub fn read_reg(&self, reg: Reg) -> u32 {
+        self.register_file.read(reg)
+    }
 
     pub fn write_reg(&mut self, reg: Reg, value: u32) -> Option<(Reg, u32)> {
         self.register_file.write(reg, value, true)
     }
 
-    pub fn force_zero_reg(&mut self) { self.register_file.force_zero(); }
+    pub fn force_zero_reg(&mut self) {
+        self.register_file.force_zero();
+    }
 
     pub fn set_halt(&mut self, reason: impl Into<String>) {
         self.halted = true;
         self.halt_reason = Some(reason.into());
     }
 
-    pub fn output_as_string(&self) -> String { self.memory.output_as_string() }
-
+    pub fn output_as_string(&self) -> String {
+        self.memory.output_as_string()
+    }
 
     pub fn load_input_schedule_text(&mut self, text: &str) -> Result<(), String> {
         self.input_device.load_schedule_text(text)

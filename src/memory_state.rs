@@ -22,7 +22,13 @@ pub struct MmioState {
 
 impl Default for MmioState {
     fn default() -> Self {
-        Self { in_status: 0, in_data: 0, out_status: OUT_STATUS_READY, irq_ack: 0, output: Vec::new() }
+        Self {
+            in_status: 0,
+            in_data: 0,
+            out_status: OUT_STATUS_READY,
+            irq_ack: 0,
+            output: Vec::new(),
+        }
     }
 }
 
@@ -124,9 +130,13 @@ impl MemoryState {
             return Ok(());
         }
         if self.is_mmio_address(address) {
-            return Err(format!("byte MMIO access is not supported at 0x{address:08x}; use word access"));
+            return Err(format!(
+                "byte MMIO access is not supported at 0x{address:08x}; use word access"
+            ));
         }
-        Err(format!("write out of mapped writable memory at 0x{address:08x}"))
+        Err(format!(
+            "write out of mapped writable memory at 0x{address:08x}"
+        ))
     }
 
     pub fn load_u32(&self, address: u32) -> Result<u32, String> {
@@ -184,17 +194,25 @@ impl MemoryState {
                 Ok(())
             }
             MMIO_IRQ_ACK => {
-                if value != 0 { self.mmio.ack_input(); }
+                if value != 0 {
+                    self.mmio.ack_input();
+                }
                 Ok(())
             }
-            MMIO_IN_STATUS | MMIO_IN_DATA | MMIO_OUT_STATUS => Err(format!("MMIO register at 0x{address:08x} is read-only")),
+            MMIO_IN_STATUS | MMIO_IN_DATA | MMIO_OUT_STATUS => {
+                Err(format!("MMIO register at 0x{address:08x} is read-only"))
+            }
             _ => Err(format!("unknown MMIO register at 0x{address:08x}")),
         }
     }
 }
 
 fn ensure_word_aligned(address: u32) -> Result<(), String> {
-    if address % 4 != 0 { Err(format!("unaligned word access at 0x{address:08x}")) } else { Ok(()) }
+    if !address.is_multiple_of(4) {
+        Err(format!("unaligned word access at 0x{address:08x}"))
+    } else {
+        Ok(())
+    }
 }
 
 fn read_from_region(address: u32, base: u32, region: &[u8]) -> Option<u8> {
@@ -203,7 +221,14 @@ fn read_from_region(address: u32, base: u32, region: &[u8]) -> Option<u8> {
 }
 
 fn write_to_region(address: u32, base: u32, region: &mut [u8], value: u8) -> bool {
-    let Some(offset) = address.checked_sub(base) else { return false; };
+    let Some(offset) = address.checked_sub(base) else {
+        return false;
+    };
     let offset = offset as usize;
-    if let Some(slot) = region.get_mut(offset) { *slot = value; true } else { false }
+    if let Some(slot) = region.get_mut(offset) {
+        *slot = value;
+        true
+    } else {
+        false
+    }
 }

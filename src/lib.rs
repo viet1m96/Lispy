@@ -12,5 +12,5 @@ pub mod machine;
 pub mod memory_state;
 pub mod runtime;
 pub mod trace;
-pub mod typecheck;
 pub mod trap;
+pub mod typecheck;

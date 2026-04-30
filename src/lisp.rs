@@ -1,29 +1,8 @@
 use std::fmt;
 
 const BUILTIN_NAMES: &[&str] = &[
-    "+",
-    "-",
-    "*",
-    "/",
-    "%",
-    "=",
-    "!=",
-    "<",
-    "<=",
-    ">",
-    ">=",
-    "and",
-    "or",
-    "not",
-    "bit-and",
-    "bit-or",
-    "bit-xor",
-    "shl",
-    "shr",
-    "sar",
-    "strlen",
-    "strget",
-    "strset",
+    "+", "-", "*", "/", "%", "=", "!=", "<", "<=", ">", ">=", "and", "or", "not", "bit-and",
+    "bit-or", "bit-xor", "shl", "shr", "sar", "strlen", "strget", "strset",
 ];
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -333,7 +312,12 @@ impl Parser {
         let return_type = self.expect_type_name()?;
         let body = self.parse_body_until_rparen()?;
         self.expect_rparen()?;
-        Ok(Defun { name, params, return_type, body })
+        Ok(Defun {
+            name,
+            params,
+            return_type,
+            body,
+        })
     }
 
     fn parse_expr(&mut self) -> Result<Expr, String> {
@@ -406,7 +390,11 @@ impl Parser {
                     let type_ann = self.expect_type_name()?;
                     let value = self.parse_expr()?;
                     self.expect_rparen()?;
-                    bindings.push(Binding { name, type_ann, value });
+                    bindings.push(Binding {
+                        name,
+                        type_ann,
+                        value,
+                    });
                 }
                 self.expect_rparen()?;
                 let body = self.parse_body_until_rparen()?;
@@ -673,7 +661,7 @@ fn parse_type_name(name: &str) -> Option<TypeName> {
 }
 
 fn is_builtin_name(name: &str) -> bool {
-    BUILTIN_NAMES.iter().any(|builtin| *builtin == name)
+    BUILTIN_NAMES.contains(&name)
 }
 
 fn is_valid_identifier(name: &str) -> bool {
@@ -754,7 +742,11 @@ fn render_expr(expr: &Expr, depth: usize, out: &mut String) {
             indent(depth, out);
             out.push_str(&format!("Ident {name}\n"));
         }
-        Expr::Setq { name, type_ann, value } => {
+        Expr::Setq {
+            name,
+            type_ann,
+            value,
+        } => {
             indent(depth, out);
             out.push_str(&format!("Setq {name} {}\n", type_ann.as_str()));
             render_expr(value, depth + 1, out);

@@ -1,6 +1,6 @@
 use crate::control::ControlUnit;
-use crate::interrupt::InterruptRequestInput;
 use crate::datapath;
+use crate::interrupt::InterruptRequestInput;
 use crate::isa::Instruction;
 use crate::machine::{Machine, Phase};
 use crate::trace::TraceLog;
@@ -36,7 +36,17 @@ pub fn step_tick(machine: &mut Machine, trace: &mut TraceLog) -> Result<(), Stri
             let control_step = control_unit.fetch_step(&machine.control_state)?;
             let datapath_note = datapath::tick_fetch(machine, &control_step.signals)?;
             let ir = machine.ir;
-            trace.push(tick, phase, pc, ir, format!("{}{}", device_note, trace_note(&control_step, datapath_note)));
+            trace.push(
+                tick,
+                phase,
+                pc,
+                ir,
+                format!(
+                    "{}{}",
+                    device_note,
+                    trace_note(&control_step, datapath_note)
+                ),
+            );
             machine.clock_control(false, control_step.internal.state_d);
         }
         Phase::Execute => {
@@ -50,9 +60,25 @@ pub fn step_tick(machine: &mut Machine, trace: &mut TraceLog) -> Result<(), Stri
                 mie: machine.trap.mie(),
                 in_trap: machine.trap.in_trap(),
             };
-            let control_step = control_unit.execute_step(&machine.control_state, decoded, branch_flags, irq_input)?;
-            let datapath_note = datapath::apply_execute(machine, &inst, &control_step.signals, pc_old)?;
-            trace.push(tick, phase, pc_old, ir, format!("{}{}", device_note, trace_note(&control_step, datapath_note)));
+            let control_step = control_unit.execute_step(
+                &machine.control_state,
+                decoded,
+                branch_flags,
+                irq_input,
+            )?;
+            let datapath_note =
+                datapath::apply_execute(machine, &inst, &control_step.signals, pc_old)?;
+            trace.push(
+                tick,
+                phase,
+                pc_old,
+                ir,
+                format!(
+                    "{}{}",
+                    device_note,
+                    trace_note(&control_step, datapath_note)
+                ),
+            );
             machine.clock_control(false, control_step.internal.state_d);
         }
         Phase::TrapEnter => {
@@ -60,7 +86,17 @@ pub fn step_tick(machine: &mut Machine, trace: &mut TraceLog) -> Result<(), Stri
             let ir = machine.ir;
             let control_step = control_unit.trap_enter_step(&machine.control_state)?;
             let datapath_note = datapath::apply_trap_enter(machine, &control_step.signals)?;
-            trace.push(tick, phase, pc, ir, format!("{}{}", device_note, trace_note(&control_step, datapath_note)));
+            trace.push(
+                tick,
+                phase,
+                pc,
+                ir,
+                format!(
+                    "{}{}",
+                    device_note,
+                    trace_note(&control_step, datapath_note)
+                ),
+            );
             machine.clock_control(false, control_step.internal.state_d);
         }
         Phase::Halt => {

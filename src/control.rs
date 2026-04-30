@@ -456,7 +456,7 @@ impl ControlInternalSignals {
             irq_req: false,
         }
     }
-
+    #[allow(clippy::too_many_arguments)]
     pub fn execute(
         state_q: Phase,
         state_d: Phase,
