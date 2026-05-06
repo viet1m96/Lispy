@@ -3,9 +3,8 @@ entry = 0x00000004
 [symbols]
 __default_input_handler 0x00000050
 __default_input_handler_done 0x000000bc
-__rt_input_buf_data  0x00020040
+__rt_input_buf_data  0x0002003c
 __rt_input_buf_head  0x00020034
-__rt_input_buf_len   0x0002003c
 __rt_input_buf_tail  0x00020038
 __rt_print_pstr      0x00000014
 __rt_print_pstr_done 0x00000044
@@ -58,7 +57,7 @@ _start               0x00000004
 000000a0 - 630ed301         - beq t1, t4, 28
 000000a4 - 930f2000         - addi t6, x0, 2
 000000a8 - 339ff301         - sll t5, t2, t6
-000000ac - 930fce00         - addi t6, t3, 12
+000000ac - 930f8e00         - addi t6, t3, 8
 000000b0 - b38fef01         - add t6, t6, t5
 000000b4 - 23a05f00         - sw t0, 0(t6)
 000000b8 - 23226e00         - sw t1, 4(t3)
@@ -94,4 +93,3 @@ _start               0x00000004
 00020070 - 00000000         - .word 0x00000000
 00020074 - 00000000         - .word 0x00000000
 00020078 - 00000000         - .word 0x00000000
-0002007c - 00000000         - .word 0x00000000

@@ -5,9 +5,8 @@ __default_input_handler 0x00000138
 __default_input_handler_done 0x000001a4
 __g_name_0           0x00020050
 __rt_heap_ptr        0x00020080
-__rt_input_buf_data  0x00020090
+__rt_input_buf_data  0x0002008c
 __rt_input_buf_head  0x00020084
-__rt_input_buf_len   0x0002008c
 __rt_input_buf_tail  0x00020088
 __rt_print_pstr      0x0000004c
 __rt_print_pstr_done 0x0000007c
@@ -95,7 +94,7 @@ _start               0x00000004
 0000010c - e38862fe         - beq t0, t1, -16
 00000110 - 130e2000         - addi t3, x0, 2
 00000114 - b39ec201         - sll t4, t0, t3
-00000118 - 9303cf00         - addi t2, t5, 12
+00000118 - 93038f00         - addi t2, t5, 8
 0000011c - b383d301         - add t2, t2, t4
 00000120 - 03a50300         - lw a0, 0(t2)
 00000124 - 93821200         - addi t0, t0, 1
@@ -126,7 +125,7 @@ _start               0x00000004
 00000188 - 630ed301         - beq t1, t4, 28
 0000018c - 930f2000         - addi t6, x0, 2
 00000190 - 339ff301         - sll t5, t2, t6
-00000194 - 930fce00         - addi t6, t3, 12
+00000194 - 930f8e00         - addi t6, t3, 8
 00000198 - b38fef01         - add t6, t6, t5
 0000019c - 23a05f00         - sw t0, 0(t6)
 000001a0 - 23226e00         - sw t1, 4(t3)
@@ -168,4 +167,3 @@ _start               0x00000004
 000200c0 - 00000000         - .word 0x00000000
 000200c4 - 00000000         - .word 0x00000000
 000200c8 - 00000000         - .word 0x00000000
-000200cc - 00000000         - .word 0x00000000

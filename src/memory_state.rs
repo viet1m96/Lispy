@@ -131,7 +131,7 @@ impl MemoryState {
         }
         if self.is_mmio_address(address) {
             return Err(format!(
-                "byte MMIO access is not supported at 0x{address:08x}; use word access"
+                "byte MMIO access at 0x{address:08x} is invalid; use word access"
             ));
         }
         Err(format!(

@@ -11,7 +11,6 @@ pub const DEFAULT_INPUT_HANDLER_LABEL: &str = "__default_input_handler";
 
 const INPUT_BUF_HEAD_LABEL: &str = "__rt_input_buf_head";
 const INPUT_BUF_TAIL_LABEL: &str = "__rt_input_buf_tail";
-const INPUT_BUF_LEN_LABEL: &str = "__rt_input_buf_len";
 const INPUT_BUF_DATA_LABEL: &str = "__rt_input_buf_data";
 const INPUT_BUF_CAPACITY: i32 = 16;
 
@@ -26,7 +25,7 @@ const INPUT_HANDLER_CONTEXT_REGS: [Reg; 7] = [
 ];
 const INPUT_HANDLER_CONTEXT_BYTES: i32 = (INPUT_HANDLER_CONTEXT_REGS.len() as i32) * 4;
 
-const HEAP_PTR_LABEL: &str = "__rt_heap_ptr";
+pub const HEAP_PTR_LABEL: &str = "__rt_heap_ptr";
 
 pub fn emit_runtime(
     program: &mut AsmProgram,
@@ -51,11 +50,6 @@ pub fn emit_runtime(
     }
     if needs_read_line {
         emit_read_line(program);
-        program.label(AsmSection::Data, HEAP_PTR_LABEL);
-        program.emit_data(
-            AsmSection::Data,
-            DataItem::Word(DEFAULT_MEMORY_LAYOUT.heap_base),
-        );
     }
     if needs_read_char || needs_read_line {
         emit_read_char(program);
@@ -870,7 +864,7 @@ fn emit_read_char(program: &mut AsmProgram) {
         Instruction::Addi {
             rd: Reg::T2,
             rs1: Reg::T5,
-            imm: Expr::from_i32(12),
+            imm: Expr::from_i32(8),
         },
     );
 
@@ -1029,7 +1023,7 @@ fn emit_default_input_handler(program: &mut AsmProgram) {
         Instruction::Addi {
             rd: Reg::T6,
             rs1: Reg::T3,
-            imm: Expr::from_i32(12),
+            imm: Expr::from_i32(8),
         },
     );
 
@@ -1072,8 +1066,6 @@ fn emit_input_buffer_data(program: &mut AsmProgram) {
     program.label(AsmSection::Data, INPUT_BUF_HEAD_LABEL);
     program.emit_data(AsmSection::Data, DataItem::Word(0));
     program.label(AsmSection::Data, INPUT_BUF_TAIL_LABEL);
-    program.emit_data(AsmSection::Data, DataItem::Word(0));
-    program.label(AsmSection::Data, INPUT_BUF_LEN_LABEL);
     program.emit_data(AsmSection::Data, DataItem::Word(0));
     program.label(AsmSection::Data, INPUT_BUF_DATA_LABEL);
     for _ in 0..INPUT_BUF_CAPACITY {

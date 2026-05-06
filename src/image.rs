@@ -88,7 +88,7 @@ impl ProgramImage {
 
         let version = read_u32(bytes, 4)?;
         if version != IMAGE_VERSION {
-            return Err(format!("unsupported image version: {version}"));
+            return Err(format!("invalid image version: {version}"));
         }
 
         let entry = read_u32(bytes, 8)?;

@@ -1,6 +1,6 @@
 use crate::datapath::BranchCompareFlags;
 use crate::interrupt::{InterruptRequestInput, InterruptRequestLogic};
-use crate::isa::{AluRKind, BranchKind, Instruction};
+use crate::isa::{AluRKind, BranchKind, Instruction, VectorRKind};
 use crate::machine::Phase;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -59,6 +59,13 @@ pub enum WbSel {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum VecWbSel {
+    None,
+    MemLane,
+    Alu,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PcSel {
     PcPlus4,
     AluTarget,
@@ -72,11 +79,13 @@ pub enum MemAddrSel {
     Pc,
     AluOut,
     TrapVectorAddr,
+    VectorLaneAddr,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MemWriteDataSel {
     Rs2,
+    VecLane,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -85,7 +94,7 @@ pub struct DecodedInstruction {
     pub imm_sel: ImmSel,
     pub is_branch: bool,
     pub branch_kind: Option<BranchKind>,
-    pub is_halt: bool,
+    pub vector_op: Option<VectorRKind>,
     pub alu_dec_info: AluDecodeInfo,
 }
 
@@ -102,6 +111,13 @@ pub struct ControlSignals {
     pub halt_req: bool,
     pub trap_enter: bool,
     pub trap_exit: bool,
+    pub start_vec_op: bool,
+    pub vector_mem_op_write: bool,
+    pub vector_base_write: bool,
+    pub lane_counter_reset: bool,
+    pub lane_counter_inc: bool,
+    pub vector_lane_write: bool,
+    pub vector_reg_write: bool,
 
     pub addr_sel: MemAddrSel,
     pub opa_sel: OpASel,
@@ -110,8 +126,10 @@ pub struct ControlSignals {
     pub pc_sel: PcSel,
     pub imm_sel: ImmSel,
     pub mem_write_data_sel: MemWriteDataSel,
+    pub vector_wb_sel: VecWbSel,
 
     pub alu_op: Option<AluRKind>,
+    pub vector_alu_op: Option<VectorRKind>,
     pub branch_kind: Option<BranchKind>,
     pub branch_flags: Option<BranchCompareFlags>,
     pub take_branch: Option<bool>,
@@ -130,6 +148,13 @@ impl ControlSignals {
             halt_req: false,
             trap_enter: false,
             trap_exit: false,
+            start_vec_op: false,
+            vector_mem_op_write: false,
+            vector_base_write: false,
+            lane_counter_reset: false,
+            lane_counter_inc: false,
+            vector_lane_write: false,
+            vector_reg_write: false,
             addr_sel: MemAddrSel::Pc,
             opa_sel: OpASel::Rs1,
             opb_sel: OpBSel::Rs2,
@@ -137,7 +162,9 @@ impl ControlSignals {
             pc_sel: PcSel::PcPlus4,
             imm_sel: ImmSel::None,
             mem_write_data_sel: MemWriteDataSel::Rs2,
+            vector_wb_sel: VecWbSel::None,
             alu_op: None,
+            vector_alu_op: None,
             branch_kind: None,
             branch_flags: None,
             take_branch: None,
@@ -146,7 +173,7 @@ impl ControlSignals {
 
     pub fn signal_summary(&self) -> String {
         format!(
-            "pc_wr={} ir_wr={} reg_wr={} mem_rd={} mem_wr={} addr_sel={:?} opa_sel={:?} opb_sel={:?} imm_sel={:?} alu_op={:?} wb_sel={:?} pc_sel={:?} halt_req={} trap_enter={} trap_exit={} take_branch={:?}",
+            "pc_wr={} ir_wr={} reg_wr={} mem_rd={} mem_wr={} addr_sel={:?} opa_sel={:?} opb_sel={:?} imm_sel={:?} alu_op={:?} wb_sel={:?} pc_sel={:?} halt_req={} trap_enter={} trap_exit={} start_vec_op={} vmemop_wr={} vbase_wr={} lane_counter_rst={} lane_counter_inc={} vector_lane_wr={} vreg_wr={} vwb_sel={:?} valu_op={:?} take_branch={:?}",
             bit(self.pc_write),
             bit(self.ir_write),
             bit(self.reg_write),
@@ -162,6 +189,15 @@ impl ControlSignals {
             bit(self.halt_req),
             bit(self.trap_enter),
             bit(self.trap_exit),
+            bit(self.start_vec_op),
+            bit(self.vector_mem_op_write),
+            bit(self.vector_base_write),
+            bit(self.lane_counter_reset),
+            bit(self.lane_counter_inc),
+            bit(self.vector_lane_write),
+            bit(self.vector_reg_write),
+            self.vector_wb_sel,
+            self.vector_alu_op,
             self.take_branch,
         )
     }
@@ -182,7 +218,7 @@ impl InstructionDecoder {
                 imm_sel: ImmSel::U,
                 is_branch: false,
                 branch_kind: None,
-                is_halt: false,
+                vector_op: None,
                 alu_dec_info: AluDecodeInfo::NoAlu,
             },
             Instruction::Addi { .. } => DecodedInstruction {
@@ -190,7 +226,7 @@ impl InstructionDecoder {
                 imm_sel: ImmSel::I,
                 is_branch: false,
                 branch_kind: None,
-                is_halt: false,
+                vector_op: None,
                 alu_dec_info: AluDecodeInfo::UseFixed(AluRKind::Add),
             },
             Instruction::Lw { .. } => DecodedInstruction {
@@ -198,7 +234,7 @@ impl InstructionDecoder {
                 imm_sel: ImmSel::I,
                 is_branch: false,
                 branch_kind: None,
-                is_halt: false,
+                vector_op: None,
                 alu_dec_info: AluDecodeInfo::UseFixed(AluRKind::Add),
             },
             Instruction::Sw { .. } => DecodedInstruction {
@@ -206,7 +242,7 @@ impl InstructionDecoder {
                 imm_sel: ImmSel::S,
                 is_branch: false,
                 branch_kind: None,
-                is_halt: false,
+                vector_op: None,
                 alu_dec_info: AluDecodeInfo::UseFixed(AluRKind::Add),
             },
             Instruction::AluR { op, .. } => DecodedInstruction {
@@ -214,7 +250,7 @@ impl InstructionDecoder {
                 imm_sel: ImmSel::None,
                 is_branch: false,
                 branch_kind: None,
-                is_halt: false,
+                vector_op: None,
                 alu_dec_info: AluDecodeInfo::UseRType(*op),
             },
             Instruction::Branch { op, .. } => DecodedInstruction {
@@ -222,7 +258,7 @@ impl InstructionDecoder {
                 imm_sel: ImmSel::B,
                 is_branch: true,
                 branch_kind: Some(*op),
-                is_halt: false,
+                vector_op: None,
                 alu_dec_info: AluDecodeInfo::UseFixed(AluRKind::Add),
             },
             Instruction::Jal { .. } => DecodedInstruction {
@@ -230,7 +266,7 @@ impl InstructionDecoder {
                 imm_sel: ImmSel::J,
                 is_branch: false,
                 branch_kind: None,
-                is_halt: false,
+                vector_op: None,
                 alu_dec_info: AluDecodeInfo::UseFixed(AluRKind::Add),
             },
             Instruction::Jalr { .. } => DecodedInstruction {
@@ -238,7 +274,7 @@ impl InstructionDecoder {
                 imm_sel: ImmSel::I,
                 is_branch: false,
                 branch_kind: None,
-                is_halt: false,
+                vector_op: None,
                 alu_dec_info: AluDecodeInfo::UseFixed(AluRKind::Add),
             },
             Instruction::Mret => DecodedInstruction {
@@ -246,7 +282,7 @@ impl InstructionDecoder {
                 imm_sel: ImmSel::None,
                 is_branch: false,
                 branch_kind: None,
-                is_halt: false,
+                vector_op: None,
                 alu_dec_info: AluDecodeInfo::NoAlu,
             },
             Instruction::Halt => DecodedInstruction {
@@ -254,7 +290,7 @@ impl InstructionDecoder {
                 imm_sel: ImmSel::None,
                 is_branch: false,
                 branch_kind: None,
-                is_halt: true,
+                vector_op: None,
                 alu_dec_info: AluDecodeInfo::NoAlu,
             },
             Instruction::Vld { .. } => DecodedInstruction {
@@ -262,7 +298,7 @@ impl InstructionDecoder {
                 imm_sel: ImmSel::I,
                 is_branch: false,
                 branch_kind: None,
-                is_halt: false,
+                vector_op: None,
                 alu_dec_info: AluDecodeInfo::UseFixed(AluRKind::Add),
             },
             Instruction::Vst { .. } => DecodedInstruction {
@@ -270,15 +306,15 @@ impl InstructionDecoder {
                 imm_sel: ImmSel::S,
                 is_branch: false,
                 branch_kind: None,
-                is_halt: false,
+                vector_op: None,
                 alu_dec_info: AluDecodeInfo::UseFixed(AluRKind::Add),
             },
-            Instruction::VectorR { .. } => DecodedInstruction {
+            Instruction::VectorR { op, .. } => DecodedInstruction {
                 instr_class: InstrClass::VectorR,
                 imm_sel: ImmSel::None,
                 is_branch: false,
                 branch_kind: None,
-                is_halt: false,
+                vector_op: Some(*op),
                 alu_dec_info: AluDecodeInfo::NoAlu,
             },
         }
@@ -414,8 +450,62 @@ impl ControlSignalGenerator {
                 sig.pc_sel = PcSel::Mepc;
                 sig.trap_exit = true;
             }
-            InstrClass::VectorLoad | InstrClass::VectorStore | InstrClass::VectorR => {
-                return Err("vector instructions are decoded, but execute path is reserved for vector milestone".to_string());
+            InstrClass::VectorLoad => {
+                sig.pc_write = false;
+                sig.opa_sel = OpASel::Rs1;
+                sig.opb_sel = OpBSel::Imm;
+                sig.vector_mem_op_write = true;
+                sig.vector_base_write = true;
+                sig.lane_counter_reset = true;
+                sig.start_vec_op = true;
+            }
+            InstrClass::VectorStore => {
+                sig.pc_write = false;
+                sig.opa_sel = OpASel::Rs1;
+                sig.opb_sel = OpBSel::Imm;
+                sig.vector_mem_op_write = true;
+                sig.vector_base_write = true;
+                sig.lane_counter_reset = true;
+                sig.start_vec_op = true;
+            }
+            InstrClass::VectorR => {
+                sig.vector_reg_write = true;
+                sig.vector_wb_sel = VecWbSel::Alu;
+                sig.vector_alu_op = decoded.vector_op;
+                sig.pc_sel = PcSel::PcPlus4;
+            }
+        }
+
+        Ok(sig)
+    }
+
+    pub fn vec_op_signals(
+        self,
+        decoded: DecodedInstruction,
+        lane_done: bool,
+    ) -> Result<ControlSignals, String> {
+        let mut sig = ControlSignals::inactive(Phase::VecOp);
+        sig.instr_class = Some(decoded.instr_class);
+        sig.addr_sel = MemAddrSel::VectorLaneAddr;
+        sig.pc_sel = PcSel::PcPlus4;
+        sig.pc_write = lane_done;
+        sig.lane_counter_inc = true;
+
+        match decoded.instr_class {
+            InstrClass::VectorLoad => {
+                sig.mem_read = true;
+                sig.vector_lane_write = true;
+                sig.vector_wb_sel = VecWbSel::MemLane;
+            }
+            InstrClass::VectorStore => {
+                sig.mem_write = true;
+                sig.mem_write_data_sel = MemWriteDataSel::VecLane;
+            }
+            other => {
+                return Err(format!(
+                    "VEC_OP phase expected vector memory instruction, got {:?}",
+                    other
+                ));
             }
         }
 
@@ -437,6 +527,7 @@ pub struct ControlInternalSignals {
     pub mie_in: Option<bool>,
     pub in_trap_in: Option<bool>,
     pub irq_req: bool,
+    pub lane_done_in: Option<bool>,
 }
 
 impl ControlInternalSignals {
@@ -454,6 +545,7 @@ impl ControlInternalSignals {
             mie_in: None,
             in_trap_in: None,
             irq_req: false,
+            lane_done_in: None,
         }
     }
     #[allow(clippy::too_many_arguments)]
@@ -480,6 +572,32 @@ impl ControlInternalSignals {
             mie_in: Some(irq_input.mie),
             in_trap_in: Some(irq_input.in_trap),
             irq_req,
+            lane_done_in: None,
+        }
+    }
+
+    pub fn vec_op(
+        state_q: Phase,
+        state_d: Phase,
+        decoded: DecodedInstruction,
+        lane_done: bool,
+        irq_input: InterruptRequestInput,
+        irq_req: bool,
+    ) -> Self {
+        Self {
+            state_q,
+            state_d,
+            reset: false,
+            decoded: Some(decoded),
+            alu_decode_info: Some(decoded.alu_dec_info),
+            alu_op: None,
+            branch_flags_in: None,
+            branch_decision: None,
+            irq_pending_in: Some(irq_input.irq_pending),
+            mie_in: Some(irq_input.mie),
+            in_trap_in: Some(irq_input.in_trap),
+            irq_req,
+            lane_done_in: Some(lane_done),
         }
     }
 
@@ -488,15 +606,12 @@ impl ControlInternalSignals {
             .decoded
             .map(|d| {
                 format!(
-                    "instr_class={:?} imm_sel={:?} branch_kind={:?} is_halt={}",
-                    d.instr_class,
-                    d.imm_sel,
-                    d.branch_kind,
-                    bit(d.is_halt),
+                    "instr_class={:?} imm_sel={:?} branch_kind={:?} vector_op={:?}",
+                    d.instr_class, d.imm_sel, d.branch_kind, d.vector_op,
                 )
             })
             .unwrap_or_else(|| {
-                "instr_class=None imm_sel=None branch_kind=None is_halt=0".to_string()
+                "instr_class=None imm_sel=None branch_kind=None vector_op=None".to_string()
             });
 
         let branch = self
@@ -513,6 +628,11 @@ impl ControlInternalSignals {
             })
             .unwrap_or_else(|| "BranchDecision(None)".to_string());
 
+        let lane = self
+            .lane_done_in
+            .map(|done| format!(" LaneComparator(lane_done={})", bit(done)))
+            .unwrap_or_default();
+
         let irq = match (self.irq_pending_in, self.mie_in, self.in_trap_in) {
             (Some(pending), Some(mie), Some(in_trap)) => format!(
                 "InterruptRequestLogic(irq_pending={}, mie={}, in_trap={} -> irq_req={})",
@@ -525,7 +645,7 @@ impl ControlInternalSignals {
         };
 
         format!(
-            "StateRegister.Q={:?} reset={} InstructionDecoder({}) AluDecoder(info={:?} -> alu_op={:?}) BranchFlagsIn={:?} {} {} NextStateLogic.D={:?}",
+            "StateRegister.Q={:?} reset={} InstructionDecoder({}) AluDecoder(info={:?} -> alu_op={:?}) BranchFlagsIn={:?} {}{} {} NextStateLogic.D={:?}",
             self.state_q,
             bit(self.reset),
             decoded,
@@ -533,6 +653,7 @@ impl ControlInternalSignals {
             self.alu_op,
             self.branch_flags_in,
             branch,
+            lane,
             irq,
             self.state_d,
         )
@@ -597,14 +718,28 @@ impl ControlUnitState {
 pub struct NextStateLogic;
 
 impl NextStateLogic {
-    pub fn next_state(self, current: Phase, halt_req: bool, irq_req: bool) -> Phase {
-        match (current, halt_req, irq_req) {
-            (_, true, _) => Phase::Halt,
-            (Phase::Fetch, false, _) => Phase::Execute,
-            (Phase::Execute, false, true) => Phase::TrapEnter,
-            (Phase::Execute, false, false) => Phase::Fetch,
-            (Phase::TrapEnter, false, _) => Phase::Fetch,
-            (Phase::Halt, false, _) => Phase::Halt,
+    pub fn next_state(
+        self,
+        current: Phase,
+        halt_req: bool,
+        irq_req: bool,
+        start_vec_op: bool,
+        lane_done: bool,
+    ) -> Phase {
+        if halt_req {
+            return Phase::Halt;
+        }
+
+        match current {
+            Phase::Fetch => Phase::Execute,
+            Phase::Execute if start_vec_op => Phase::VecOp,
+            Phase::Execute if irq_req => Phase::TrapEnter,
+            Phase::Execute => Phase::Fetch,
+            Phase::VecOp if !lane_done => Phase::VecOp,
+            Phase::VecOp if irq_req => Phase::TrapEnter,
+            Phase::VecOp => Phase::Fetch,
+            Phase::TrapEnter => Phase::Fetch,
+            Phase::Halt => Phase::Halt,
         }
     }
 }
@@ -624,10 +759,6 @@ impl ControlUnit {
         self.instruction_decoder.decode(inst)
     }
 
-    pub fn fetch_signals(self) -> ControlSignals {
-        self.signal_generator.fetch_signals()
-    }
-
     pub fn fetch_step(self, state: &ControlUnitState) -> Result<ControlStep, String> {
         let current = state.phase();
         if current != Phase::Fetch {
@@ -638,9 +769,9 @@ impl ControlUnit {
         }
 
         let signals = self.signal_generator.fetch_signals();
-        let next_state = self
-            .next_state_logic
-            .next_state(current, signals.halt_req, false);
+        let next_state =
+            self.next_state_logic
+                .next_state(current, signals.halt_req, false, false, false);
         let mut internal = ControlInternalSignals::fetch(current, next_state);
         internal.irq_req = false;
         Ok(ControlStep { signals, internal })
@@ -678,10 +809,14 @@ impl ControlUnit {
             .signal_generator
             .execute_signals(decoded, alu_op, branch_decision)?;
         let irq_req = self.interrupt_request_logic.eval(irq_input);
-        let effective_irq = irq_req && !signals.halt_req;
-        let next_state = self
-            .next_state_logic
-            .next_state(current, signals.halt_req, effective_irq);
+        let effective_irq = irq_req && !signals.halt_req && !signals.start_vec_op;
+        let next_state = self.next_state_logic.next_state(
+            current,
+            signals.halt_req,
+            effective_irq,
+            signals.start_vec_op,
+            false,
+        );
         let internal = ControlInternalSignals::execute(
             current,
             next_state,
@@ -689,6 +824,43 @@ impl ControlUnit {
             alu_op,
             branch_flags,
             branch_decision,
+            irq_input,
+            effective_irq,
+        );
+
+        Ok(ControlStep { signals, internal })
+    }
+
+    pub fn vec_op_step(
+        self,
+        state: &ControlUnitState,
+        decoded: DecodedInstruction,
+        lane_done: bool,
+        irq_input: InterruptRequestInput,
+    ) -> Result<ControlStep, String> {
+        let current = state.phase();
+        if current != Phase::VecOp {
+            return Err(format!(
+                "ControlUnit vec_op_step expected StateRegister=VecOp, got {:?}",
+                current
+            ));
+        }
+
+        let signals = self.signal_generator.vec_op_signals(decoded, lane_done)?;
+        let irq_req = self.interrupt_request_logic.eval(irq_input);
+        let effective_irq = irq_req && lane_done;
+        let next_state = self.next_state_logic.next_state(
+            current,
+            signals.halt_req,
+            effective_irq,
+            false,
+            lane_done,
+        );
+        let internal = ControlInternalSignals::vec_op(
+            current,
+            next_state,
+            decoded,
+            lane_done,
             irq_input,
             effective_irq,
         );
@@ -711,51 +883,13 @@ impl ControlUnit {
         signals.pc_write = true;
         signals.addr_sel = MemAddrSel::TrapVectorAddr;
         signals.pc_sel = PcSel::TrapVector;
-        let next_state = self.next_state_logic.next_state(current, false, false);
+        let next_state = self
+            .next_state_logic
+            .next_state(current, false, false, false, false);
         let mut internal = ControlInternalSignals::fetch(current, next_state);
         internal.irq_req = true;
         Ok(ControlStep { signals, internal })
     }
-
-    pub fn execute_signals(
-        self,
-        decoded: DecodedInstruction,
-        branch_flags: Option<BranchCompareFlags>,
-    ) -> Result<ControlSignals, String> {
-        let alu_op = self.alu_decoder.decode(decoded.alu_dec_info);
-        let branch_decision = if decoded.is_branch {
-            let flags = branch_flags.ok_or_else(|| {
-                "ControlUnit expected BranchComparator eq/lt/gt flags".to_string()
-            })?;
-            let kind = decoded
-                .branch_kind
-                .ok_or_else(|| "decoded branch is missing branch_kind".to_string())?;
-            Some(self.branch_decision.decide(kind, flags))
-        } else {
-            None
-        };
-        self.signal_generator
-            .execute_signals(decoded, alu_op, branch_decision)
-    }
-
-    pub fn next_state(self, current: Phase, halt_req: bool) -> Phase {
-        self.next_state_logic.next_state(current, halt_req, false)
-    }
-}
-
-pub fn decode_instruction(inst: &Instruction) -> DecodedInstruction {
-    ControlUnit::default().decode(inst)
-}
-
-pub fn fetch_signals() -> ControlSignals {
-    ControlUnit::default().fetch_signals()
-}
-
-pub fn generate_execute_signals(
-    decoded: DecodedInstruction,
-    branch_flags: Option<BranchCompareFlags>,
-) -> Result<ControlSignals, String> {
-    ControlUnit::default().execute_signals(decoded, branch_flags)
 }
 
 pub fn select_next_pc(
@@ -782,12 +916,4 @@ pub fn select_next_pc(
             .ok_or_else(|| "PC_MUX TrapVector needs handler address from memory".to_string()),
         PcSel::Mepc => mepc.ok_or_else(|| "PC_MUX Mepc needs mepc from TrapBlock".to_string()),
     }
-}
-
-pub fn next_phase_after_fetch() -> Phase {
-    ControlUnit::default().next_state(Phase::Fetch, false)
-}
-
-pub fn next_phase_after_execute(halted: bool) -> Phase {
-    ControlUnit::default().next_state(Phase::Execute, halted)
 }

@@ -8,6 +8,7 @@ enum Type {
     I64,
     Bool,
     String,
+    Array,
     Nil,
 }
 
@@ -18,6 +19,7 @@ impl Type {
             TypeName::I64 => Self::I64,
             TypeName::Bool => Self::Bool,
             TypeName::String => Self::String,
+            TypeName::Array => Self::Array,
         }
     }
 
@@ -27,6 +29,7 @@ impl Type {
             Self::I64 => ":i64",
             Self::Bool => ":bool",
             Self::String => ":string",
+            Self::Array => ":array",
             Self::Nil => ":nil",
         }
     }
@@ -498,6 +501,74 @@ impl TypeChecker {
                 self.require_type(&args[2], ch, Type::Int, "strset value")?;
                 Ok(Type::Int)
             }
+            "array" => {
+                if args.len() != 1 {
+                    return Err("array expects exactly 1 size argument".to_string());
+                }
+                let size = self.infer_expr(&args[0], env, Some(Type::Int))?;
+                self.require_type(&args[0], size, Type::Int, "array size")?;
+                Ok(Type::Array)
+            }
+            "array-get" => {
+                if args.len() != 2 {
+                    return Err("array-get expects exactly 2 arguments".to_string());
+                }
+                let arr = self.infer_expr(&args[0], env, Some(Type::Array))?;
+                let index = self.infer_expr(&args[1], env, Some(Type::Int))?;
+                self.require_type(&args[0], arr, Type::Array, "array-get array")?;
+                self.require_type(&args[1], index, Type::Int, "array-get index")?;
+                Ok(Type::Int)
+            }
+            "array-set" => {
+                if args.len() != 3 {
+                    return Err("array-set expects exactly 3 arguments".to_string());
+                }
+                let arr = self.infer_expr(&args[0], env, Some(Type::Array))?;
+                let index = self.infer_expr(&args[1], env, Some(Type::Int))?;
+                let value = self.infer_expr(&args[2], env, Some(Type::Int))?;
+                self.require_type(&args[0], arr, Type::Array, "array-set array")?;
+                self.require_type(&args[1], index, Type::Int, "array-set index")?;
+                self.require_type(&args[2], value, Type::Int, "array-set value")?;
+                Ok(Type::Int)
+            }
+            "array-size" => {
+                if args.len() != 1 {
+                    return Err("array-size expects exactly 1 argument".to_string());
+                }
+                let arr = self.infer_expr(&args[0], env, Some(Type::Array))?;
+                self.require_type(&args[0], arr, Type::Array, "array-size argument")?;
+                Ok(Type::Int)
+            }
+            "vadd" | "vsub" | "vmul" | "vdiv" | "vcmp" => {
+                if args.len() != 3 {
+                    return Err(format!(
+                        "builtin '{}' expects exactly 3 array arguments: destination, left, right",
+                        name
+                    ));
+                }
+                let dst = self.infer_expr(&args[0], env, Some(Type::Array))?;
+                let left = self.infer_expr(&args[1], env, Some(Type::Array))?;
+                let right = self.infer_expr(&args[2], env, Some(Type::Array))?;
+                self.require_type(
+                    &args[0],
+                    dst,
+                    Type::Array,
+                    &format!("builtin '{}' destination array", name),
+                )?;
+                self.require_type(
+                    &args[1],
+                    left,
+                    Type::Array,
+                    &format!("builtin '{}' left array", name),
+                )?;
+                self.require_type(
+                    &args[2],
+                    right,
+                    Type::Array,
+                    &format!("builtin '{}' right array", name),
+                )?;
+                Ok(Type::Array)
+            }
             other => Err(format!("unknown builtin '{}'", other)),
         }
     }
@@ -551,7 +622,7 @@ impl TypeChecker {
             )
         {
             return Err(format!(
-                "dynamic i64 builtin '{}' is not supported by the current code generator; use :int or keep the expression constant",
+                "dynamic :i64 builtin '{}' is allowed only when the expression can be folded at compile time; use :int operands for runtime evaluation",
                 name
             ));
         }
@@ -588,7 +659,7 @@ impl TypeChecker {
         if base == Type::String {
             if !allow_string {
                 return Err(format!(
-                    "comparison '{}' is not supported for strings",
+                    "comparison '{}' requires numeric operands; string operands are invalid",
                     name
                 ));
             }
@@ -627,6 +698,7 @@ impl TypeChecker {
             Type::I64 => matches!(source, Type::Int | Type::I64 | Type::Bool | Type::Nil),
             Type::Bool => matches!(source, Type::Int | Type::I64 | Type::Bool | Type::Nil),
             Type::String => source == Type::String,
+            Type::Array => source == Type::Array,
             Type::Nil => source == Type::Nil,
         };
         if ok {

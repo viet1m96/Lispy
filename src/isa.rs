@@ -185,7 +185,7 @@ impl BranchKind {
             0b001 => Ok(Self::Bne),
             0b100 => Ok(Self::Blt),
             0b101 => Ok(Self::Bge),
-            _ => Err(format!("unsupported branch funct3: {value:#05b}")),
+            _ => Err(format!("invalid branch funct3: {value:#05b}")),
         }
     }
 }
@@ -280,7 +280,7 @@ impl AluRKind {
             (0b110, 0b0000001) => Ok(Self::Rem),
             (0b111, 0b0000001) => Ok(Self::Remu),
             _ => Err(format!(
-                "unsupported scalar R-type combination funct3={funct3:#05b}, funct7={funct7:#09b}"
+                "invalid scalar R-type combination funct3={funct3:#05b}, funct7={funct7:#09b}"
             )),
         }
     }
@@ -324,7 +324,7 @@ impl VectorRKind {
             (0b100, 0b0000001) => Ok(Self::Vdiv),
             (0b010, 0b0000000) => Ok(Self::Vcmpeq),
             _ => Err(format!(
-                "unsupported vector R-type combination funct3={funct3:#05b}, funct7={funct7:#09b}"
+                "invalid vector R-type combination funct3={funct3:#05b}, funct7={funct7:#09b}"
             )),
         }
     }
@@ -531,7 +531,7 @@ impl Instruction {
                 vs1: VReg::from_u8(field5(word, 15) as u8)?,
                 vs2: VReg::from_u8(field5(word, 20) as u8)?,
             }),
-            _ => Err(format!("unsupported instruction word 0x{word:08x}")),
+            _ => Err(format!("invalid instruction word 0x{word:08x}")),
         }
     }
 

@@ -4,9 +4,8 @@ entry = 0x00000004
 __default_input_handler 0x000000fc
 __default_input_handler_done 0x00000168
 __rt_heap_ptr        0x00020000
-__rt_input_buf_data  0x00020010
+__rt_input_buf_data  0x0002000c
 __rt_input_buf_head  0x00020004
-__rt_input_buf_len   0x0002000c
 __rt_input_buf_tail  0x00020008
 __rt_print_pstr      0x00000010
 __rt_print_pstr_done 0x00000040
@@ -76,7 +75,7 @@ _start               0x00000004
 000000d0 - e38862fe         - beq t0, t1, -16
 000000d4 - 130e2000         - addi t3, x0, 2
 000000d8 - b39ec201         - sll t4, t0, t3
-000000dc - 9303cf00         - addi t2, t5, 12
+000000dc - 93038f00         - addi t2, t5, 8
 000000e0 - b383d301         - add t2, t2, t4
 000000e4 - 03a50300         - lw a0, 0(t2)
 000000e8 - 93821200         - addi t0, t0, 1
@@ -107,7 +106,7 @@ _start               0x00000004
 0000014c - 630ed301         - beq t1, t4, 28
 00000150 - 930f2000         - addi t6, x0, 2
 00000154 - 339ff301         - sll t5, t2, t6
-00000158 - 930fce00         - addi t6, t3, 12
+00000158 - 930f8e00         - addi t6, t3, 8
 0000015c - b38fef01         - add t6, t6, t5
 00000160 - 23a05f00         - sw t0, 0(t6)
 00000164 - 23226e00         - sw t1, 4(t3)
@@ -143,4 +142,3 @@ _start               0x00000004
 00020040 - 00000000         - .word 0x00000000
 00020044 - 00000000         - .word 0x00000000
 00020048 - 00000000         - .word 0x00000000
-0002004c - 00000000         - .word 0x00000000

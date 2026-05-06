@@ -1,8 +1,38 @@
 use std::fmt;
 
 const BUILTIN_NAMES: &[&str] = &[
-    "+", "-", "*", "/", "%", "=", "!=", "<", "<=", ">", ">=", "and", "or", "not", "bit-and",
-    "bit-or", "bit-xor", "shl", "shr", "sar", "strlen", "strget", "strset",
+    "+",
+    "-",
+    "*",
+    "/",
+    "%",
+    "=",
+    "!=",
+    "<",
+    "<=",
+    ">",
+    ">=",
+    "and",
+    "or",
+    "not",
+    "bit-and",
+    "bit-or",
+    "bit-xor",
+    "shl",
+    "shr",
+    "sar",
+    "strlen",
+    "strget",
+    "strset",
+    "array",
+    "array-get",
+    "array-set",
+    "array-size",
+    "vadd",
+    "vsub",
+    "vmul",
+    "vdiv",
+    "vcmp",
 ];
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -47,6 +77,7 @@ pub enum TypeName {
     I64,
     Bool,
     String,
+    Array,
 }
 
 impl TypeName {
@@ -56,6 +87,7 @@ impl TypeName {
             Self::I64 => ":i64",
             Self::Bool => ":bool",
             Self::String => ":string",
+            Self::Array => ":array",
         }
     }
 }
@@ -645,7 +677,9 @@ impl Parser {
     fn expect_type_name(&mut self) -> Result<TypeName, String> {
         let token = self.expect_symbol_any()?;
         parse_type_name(&token).ok_or_else(|| {
-            format!("expected type annotation (:int, :i64, :bool, or :string), found '{token}'")
+            format!(
+                "expected type annotation (:int, :i64, :bool, :string, or :array), found '{token}'"
+            )
         })
     }
 }
@@ -656,6 +690,7 @@ fn parse_type_name(name: &str) -> Option<TypeName> {
         ":i64" => Some(TypeName::I64),
         ":bool" => Some(TypeName::Bool),
         ":string" => Some(TypeName::String),
+        ":array" => Some(TypeName::Array),
         _ => None,
     }
 }

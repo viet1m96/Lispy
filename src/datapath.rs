@@ -2,6 +2,10 @@ use crate::asm::Expr;
 use crate::control::{self, ControlSignals, DecodedInstruction, MemAddrSel, OpASel, OpBSel, WbSel};
 use crate::isa::{AluRKind, Instruction, Reg};
 use crate::machine::Machine;
+use crate::vector::{
+    LaneComparator, LaneOffsetShifter, VectorAlu, VectorLaneAddressAdder, VectorMemoryOp,
+    VectorWriteBackMux, VectorWriteBackValue,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct BranchCompareFlags {
@@ -129,11 +133,19 @@ impl AddPcPlus4 {
 pub struct MemAddrMux;
 
 impl MemAddrMux {
-    pub fn select(self, sel: MemAddrSel, pc: u32, alu_out: u32, trap_vector_addr: u32) -> u32 {
+    pub fn select(
+        self,
+        sel: MemAddrSel,
+        pc: u32,
+        alu_out: u32,
+        trap_vector_addr: u32,
+        vector_lane_addr: u32,
+    ) -> u32 {
         match sel {
             MemAddrSel::Pc => pc,
             MemAddrSel::AluOut => alu_out,
             MemAddrSel::TrapVectorAddr => trap_vector_addr,
+            MemAddrSel::VectorLaneAddr => vector_lane_addr,
         }
     }
 }
@@ -287,6 +299,25 @@ impl MemoryBlock {
 }
 
 #[derive(Debug, Clone, Copy, Default)]
+pub struct MemWriteDataMux;
+
+impl MemWriteDataMux {
+    pub fn select(
+        self,
+        sel: control::MemWriteDataSel,
+        rs2_value: u32,
+        vector_lane_value: Option<u32>,
+    ) -> Result<u32, String> {
+        match sel {
+            control::MemWriteDataSel::Rs2 => Ok(rs2_value),
+            control::MemWriteDataSel::VecLane => vector_lane_value.ok_or_else(|| {
+                "MemWriteDataMUX selected VecLane but VectorRF lane output is missing".to_string()
+            }),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default)]
 pub struct Datapath {
     pub pc: ProgramCounter,
     pub ir: InstructionRegister,
@@ -296,9 +327,17 @@ pub struct Datapath {
     pub opb_mux: OpBMux,
     pub alu: Alu,
     pub branch_comparator: BranchComparator,
+
+    pub vector_alu: VectorAlu,
+    pub vector_lane_offset_shifter: LaneOffsetShifter,
+    pub vector_lane_addr_adder: VectorLaneAddressAdder,
+    pub lane_comparator: LaneComparator,
+    pub vector_wb_mux: VectorWriteBackMux,
+
     pub trap_vector_addr_gen: TrapVectorAddressGenerator,
     pub mem_addr_mux: MemAddrMux,
     pub memory: MemoryBlock,
+    pub mem_write_data_mux: MemWriteDataMux,
     pub wb_mux: WriteBackMux,
     pub pc_mux: PcMux,
 }
@@ -307,7 +346,7 @@ impl Datapath {
     pub fn tick_fetch(self, machine: &mut Machine, sig: &ControlSignals) -> Result<String, String> {
         let pc_old = self.pc.read(machine);
         let pc_plus4 = self.pc_plus4_adder.eval(pc_old);
-        let mem_addr = self.mem_addr_mux.select(sig.addr_sel, pc_old, 0, 0);
+        let mem_addr = self.mem_addr_mux.select(sig.addr_sel, pc_old, 0, 0, 0);
         let mem_out = self
             .memory
             .read_word(machine, mem_addr, sig.mem_read)?
@@ -406,6 +445,73 @@ impl Datapath {
             ));
         }
 
+        match inst {
+            Instruction::Vld { vd, .. } if sig.start_vec_op => {
+                let base = alu_out
+                    .ok_or_else(|| "vld setup requires scalar ALU_out base address".to_string())?;
+                machine
+                    .vector
+                    .base_register
+                    .write(base, sig.vector_base_write)
+                    .ok_or_else(|| "vld setup needs vector_base_write=1".to_string())?;
+                machine
+                    .vector
+                    .lane_counter
+                    .reset(sig.lane_counter_reset)
+                    .ok_or_else(|| "vld setup needs lane_counter_reset=1".to_string())?;
+                machine
+                    .vector
+                    .mem_op_register
+                    .write(VectorMemoryOp::Load { vd: *vd }, sig.vector_mem_op_write)
+                    .ok_or_else(|| "vld setup needs vector_mem_op_write=1".to_string())?;
+                note_parts.push(format!(
+                    "VectorBaseRegister <- ALU_out=0x{base:08x}; LaneCounterRegister <- 0; VectorMemOpRegister <- Load({vd})"
+                ));
+            }
+            Instruction::Vst { vs, .. } if sig.start_vec_op => {
+                let base = alu_out
+                    .ok_or_else(|| "vst setup requires scalar ALU_out base address".to_string())?;
+                machine
+                    .vector
+                    .base_register
+                    .write(base, sig.vector_base_write)
+                    .ok_or_else(|| "vst setup needs vector_base_write=1".to_string())?;
+                machine
+                    .vector
+                    .lane_counter
+                    .reset(sig.lane_counter_reset)
+                    .ok_or_else(|| "vst setup needs lane_counter_reset=1".to_string())?;
+                machine
+                    .vector
+                    .mem_op_register
+                    .write(VectorMemoryOp::Store { vs: *vs }, sig.vector_mem_op_write)
+                    .ok_or_else(|| "vst setup needs vector_mem_op_write=1".to_string())?;
+                note_parts.push(format!(
+                    "VectorBaseRegister <- ALU_out=0x{base:08x}; LaneCounterRegister <- 0; VectorMemOpRegister <- Store({vs})"
+                ));
+            }
+            Instruction::VectorR { op, vd, vs1, vs2 } if sig.vector_reg_write => {
+                let lhs = machine.vector.register_file.read(*vs1);
+                let rhs = machine.vector.register_file.read(*vs2);
+                let alu_result = self.vector_alu.execute(*op, lhs, rhs)?;
+                let wb_value =
+                    self.vector_wb_mux
+                        .select(sig.vector_wb_sel, None, Some(alu_result))?;
+                let VectorWriteBackValue::Full(result) = wb_value else {
+                    return Err("VectorR expected full-vector writeback value".to_string());
+                };
+                machine
+                    .vector
+                    .register_file
+                    .write(*vd, result, sig.vector_reg_write)
+                    .ok_or_else(|| "VectorR needs vector_reg_write=1".to_string())?;
+                note_parts.push(format!(
+                    "VectorRegisterFile.{vs1}={lhs:?}; VectorRegisterFile.{vs2}={rhs:?}; VectorALU({op:?})={result:?}; VectorWriteBackMUX(Alu) -> VectorRegisterFile.{vd}"
+                ));
+            }
+            _ => {}
+        }
+
         let mem_addr = if sig.mem_read || sig.mem_write {
             let alu_value = alu_out.ok_or_else(|| {
                 format!(
@@ -413,7 +519,9 @@ impl Datapath {
                     inst.mnemonic()
                 )
             })?;
-            let addr = self.mem_addr_mux.select(sig.addr_sel, pc_old, alu_value, 0);
+            let addr = self
+                .mem_addr_mux
+                .select(sig.addr_sel, pc_old, alu_value, 0, 0);
             note_parts.push(format!("MemAddrMUX({:?})=0x{addr:08x}", sig.addr_sel));
             Some(addr)
         } else {
@@ -422,11 +530,14 @@ impl Datapath {
 
         if sig.mem_write {
             let addr = mem_addr.expect("mem_addr exists when mem_write is set");
-            let value = match sig.mem_write_data_sel {
-                control::MemWriteDataSel::Rs2 => rs2_value,
-            };
+            let value = self
+                .mem_write_data_mux
+                .select(sig.mem_write_data_sel, rs2_value, None)?;
             if let Some((addr, value)) = self.memory.write_word(machine, addr, value, true)? {
-                note_parts.push(format!("Memory[0x{addr:08x}] <- 0x{value:08x}"));
+                note_parts.push(format!(
+                    "MemWriteDataMUX({:?})=0x{value:08x}; Memory[0x{addr:08x}] <- 0x{value:08x}",
+                    sig.mem_write_data_sel
+                ));
                 machine.refresh_interrupt_lines();
             }
         }
@@ -471,6 +582,120 @@ impl Datapath {
 
         Ok(note_parts.join("; "))
     }
+    pub fn tick_vec_op(
+        self,
+        machine: &mut Machine,
+        inst: &Instruction,
+        sig: &ControlSignals,
+        pc_old: u32,
+    ) -> Result<String, String> {
+        let mut note_parts = vec![format!("signals: {}", sig.signal_summary())];
+
+        let active = machine.vector.mem_op_register.read().ok_or_else(|| {
+            "VEC_OP has no active vector memory operation in VectorMemOpRegister".to_string()
+        })?;
+
+        let lane = machine.vector.lane_counter.read();
+        let base = machine.vector.base_register.read();
+        let lane_done_before = self.lane_comparator.eval(lane);
+        let lane_offset = self.vector_lane_offset_shifter.eval(lane);
+        let lane_addr = self.vector_lane_addr_adder.eval(base, lane_offset);
+        let mem_addr = self
+            .mem_addr_mux
+            .select(sig.addr_sel, pc_old, 0, 0, lane_addr);
+
+        note_parts.push(format!(
+            "VectorBaseRegister=0x{base:08x}; LaneCounterRegister={lane}; LaneOffsetShifter(lane<<2)=0x{lane_offset:08x}; VectorLaneAddressAdder=0x{lane_addr:08x}; MemAddrMUX(VectorLaneAddr)=0x{mem_addr:08x}"
+        ));
+
+        match (inst, active) {
+            (Instruction::Vld { vd, .. }, VectorMemoryOp::Load { vd: active_vd })
+                if *vd == active_vd =>
+            {
+                if !sig.mem_read || !sig.vector_lane_write {
+                    return Err("vld VEC_OP needs mem_read=1 and vector_lane_write=1".to_string());
+                }
+
+                let mem_lane = self
+                    .memory
+                    .read_word(machine, mem_addr, true)?
+                    .expect("enabled memory read returns data");
+
+                let wb_value =
+                    self.vector_wb_mux
+                        .select(sig.vector_wb_sel, Some(mem_lane), None)?;
+                let VectorWriteBackValue::Lane(value) = wb_value else {
+                    return Err("vld expected lane writeback value".to_string());
+                };
+
+                machine
+                    .vector
+                    .register_file
+                    .write_lane(*vd, lane, value, sig.vector_lane_write)?
+                    .ok_or_else(|| "vld needs vector_lane_write=1".to_string())?;
+
+                note_parts.push(format!(
+                    "Memory[0x{mem_addr:08x}] -> mem_out=0x{value:08x}; VectorWriteBackMUX(MemLane) -> VectorRegisterFile.{vd}[{lane}]"
+                ));
+            }
+            (Instruction::Vst { vs, .. }, VectorMemoryOp::Store { vs: active_vs })
+                if *vs == active_vs =>
+            {
+                if !sig.mem_write {
+                    return Err("vst VEC_OP needs mem_write=1".to_string());
+                }
+
+                let vec_lane = machine.vector.register_file.read_lane(*vs, lane)?;
+                let value =
+                    self.mem_write_data_mux
+                        .select(sig.mem_write_data_sel, 0, Some(vec_lane))?;
+
+                self.memory.write_word(machine, mem_addr, value, true)?;
+                machine.refresh_interrupt_lines();
+                note_parts.push(format!(
+                    "VectorRegisterFile.{vs}[{lane}]=0x{vec_lane:08x}; MemWriteDataMUX(VecLane)=0x{value:08x}; Memory[0x{mem_addr:08x}] <- 0x{value:08x}"
+                ));
+            }
+            _ => {
+                return Err(format!(
+                    "VEC_OP active operation {:?} does not match IR {}",
+                    active,
+                    inst.mnemonic()
+                ));
+            }
+        }
+
+        let next_lane = machine
+            .vector
+            .lane_counter
+            .increment_or_clear(lane_done_before, sig.lane_counter_inc)
+            .ok_or_else(|| "VEC_OP needs lane_counter_inc=1".to_string())?;
+
+        if lane_done_before {
+            machine.vector.mem_op_register.clear(true);
+        }
+
+        note_parts.push(format!(
+            "LaneComparator(lane_done={}); LaneCounterRegister {}",
+            bit(lane_done_before),
+            if lane_done_before {
+                "finished -> 0; VectorMemOpRegister <- None".to_string()
+            } else {
+                format!("<- {next_lane}")
+            }
+        ));
+
+        if sig.pc_write {
+            let next_pc = self.pc_plus4_adder.eval(pc_old);
+            self.pc
+                .write(machine, next_pc, true)
+                .ok_or_else(|| "finished VEC_OP needs pc_wr=1".to_string())?;
+            note_parts.push(format!("PC_MUX(PcPlus4) -> PC <- 0x{next_pc:08x}"));
+        }
+
+        Ok(note_parts.join("; "))
+    }
+
     pub fn tick_trap_enter(
         self,
         machine: &mut Machine,
@@ -482,7 +707,9 @@ impl Datapath {
         let mepc = machine.pc;
         let irq_id = machine.interrupt_lines.irq_id;
         let vector_addr = self.trap_vector_addr_gen.eval(machine.trap.vtor, irq_id);
-        let mem_addr = self.mem_addr_mux.select(sig.addr_sel, mepc, 0, vector_addr);
+        let mem_addr = self
+            .mem_addr_mux
+            .select(sig.addr_sel, mepc, 0, vector_addr, 0);
         let handler_addr = self
             .memory
             .read_word(machine, mem_addr, sig.mem_read)?
@@ -522,6 +749,15 @@ pub fn apply_execute(
     pc_old: u32,
 ) -> Result<String, String> {
     Datapath::default().tick_execute(machine, inst, sig, pc_old)
+}
+
+pub fn apply_vec_op(
+    machine: &mut Machine,
+    inst: &Instruction,
+    sig: &ControlSignals,
+    pc_old: u32,
+) -> Result<String, String> {
+    Datapath::default().tick_vec_op(machine, inst, sig, pc_old)
 }
 
 pub fn apply_trap_enter(machine: &mut Machine, sig: &ControlSignals) -> Result<String, String> {
@@ -625,6 +861,8 @@ fn read_imm(inst: &Instruction) -> Result<i32, String> {
         Instruction::Addi { imm, .. }
         | Instruction::Lw { off: imm, .. }
         | Instruction::Sw { off: imm, .. }
+        | Instruction::Vld { off: imm, .. }
+        | Instruction::Vst { off: imm, .. }
         | Instruction::Branch { off: imm, .. }
         | Instruction::Jal { off: imm, .. }
         | Instruction::Jalr { off: imm, .. } => resolved_i32(imm),
@@ -632,8 +870,6 @@ fn read_imm(inst: &Instruction) -> Result<i32, String> {
         | Instruction::AluR { .. }
         | Instruction::Mret
         | Instruction::Halt
-        | Instruction::Vld { .. }
-        | Instruction::Vst { .. }
         | Instruction::VectorR { .. } => Err(format!(
             "instruction has no scalar immediate field: {}",
             inst.mnemonic()

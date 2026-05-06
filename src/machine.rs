@@ -6,11 +6,13 @@ use crate::interrupt::InterruptLines;
 use crate::isa::Reg;
 use crate::memory_state::MemoryState;
 use crate::trap::TrapState;
+use crate::vector::VectorState;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Phase {
     Fetch,
     Execute,
+    VecOp,
     TrapEnter,
     Halt,
 }
@@ -20,6 +22,7 @@ impl Phase {
         match self {
             Self::Fetch => "fetch",
             Self::Execute => "execute",
+            Self::VecOp => "vec_op",
             Self::TrapEnter => "trap_enter",
             Self::Halt => "halt",
         }
@@ -37,6 +40,7 @@ pub struct Machine {
     pub halt_reason: Option<String>,
     pub memory: MemoryState,
     pub trap: TrapState,
+    pub vector: VectorState,
     pub input_device: InputDevice,
     pub interrupt_lines: InterruptLines,
 }
@@ -55,6 +59,7 @@ impl Machine {
             halt_reason: None,
             memory: MemoryState::from_image(image)?,
             trap,
+            vector: VectorState::default(),
             input_device: InputDevice::default(),
             interrupt_lines: InterruptLines::default(),
         })

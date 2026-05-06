@@ -14,3 +14,4 @@ pub mod runtime;
 pub mod trace;
 pub mod trap;
 pub mod typecheck;
+pub mod vector;

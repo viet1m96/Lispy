@@ -46,9 +46,8 @@ __loop_begin_0       0x00000024
 __loop_begin_10      0x000000e0
 __loop_exit_1        0x0000035c
 __loop_exit_11       0x00000324
-__rt_input_buf_data  0x00020020
+__rt_input_buf_data  0x0002001c
 __rt_input_buf_head  0x00020014
-__rt_input_buf_len   0x0002001c
 __rt_input_buf_tail  0x00020018
 __rt_print_int       0x000004f4
 __rt_print_int_after_sign 0x00000518
@@ -439,7 +438,7 @@ fn_rev3              0x0000037c
 000005d4 - 630ed301         - beq t1, t4, 28
 000005d8 - 930f2000         - addi t6, x0, 2
 000005dc - 339ff301         - sll t5, t2, t6
-000005e0 - 930fce00         - addi t6, t3, 12
+000005e0 - 930f8e00         - addi t6, t3, 8
 000005e4 - b38fef01         - add t6, t6, t5
 000005e8 - 23a05f00         - sw t0, 0(t6)
 000005ec - 23226e00         - sw t1, 4(t3)
@@ -479,4 +478,3 @@ fn_rev3              0x0000037c
 00020050 - 00000000         - .word 0x00000000
 00020054 - 00000000         - .word 0x00000000
 00020058 - 00000000         - .word 0x00000000
-0002005c - 00000000         - .word 0x00000000

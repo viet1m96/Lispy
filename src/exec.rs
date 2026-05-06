@@ -81,6 +81,34 @@ pub fn step_tick(machine: &mut Machine, trace: &mut TraceLog) -> Result<(), Stri
             );
             machine.clock_control(false, control_step.internal.state_d);
         }
+        Phase::VecOp => {
+            let pc_old = machine.pc;
+            let ir = machine.ir;
+            let inst = Instruction::decode(ir)?;
+            let decoded = control_unit.decode(&inst);
+            let lane_done = machine.vector.lane_done();
+            let irq_input = InterruptRequestInput {
+                irq_pending: machine.interrupt_lines.pending,
+                mie: machine.trap.mie(),
+                in_trap: machine.trap.in_trap(),
+            };
+            let control_step =
+                control_unit.vec_op_step(&machine.control_state, decoded, lane_done, irq_input)?;
+            let datapath_note =
+                datapath::apply_vec_op(machine, &inst, &control_step.signals, pc_old)?;
+            trace.push(
+                tick,
+                phase,
+                pc_old,
+                ir,
+                format!(
+                    "{}{}",
+                    device_note,
+                    trace_note(&control_step, datapath_note)
+                ),
+            );
+            machine.clock_control(false, control_step.internal.state_d);
+        }
         Phase::TrapEnter => {
             let pc = machine.pc;
             let ir = machine.ir;

@@ -7,17 +7,18 @@ use lispy::exec::run_to_halt;
 use lispy::image::ProgramImage;
 use lispy::lisp::parse_program;
 use lispy::machine::Machine;
+use lispy::trace::TraceRenderMode;
 
 fn print_usage() {
     println!("lab4-rust");
     println!("  dump-image <input.bin>                         print image summary and listing");
-    println!("  sim-image <input.bin> [schedule.txt] [max_ticks]  run tick engine and print trace");
+    println!("  sim-image <input.bin> [schedule.txt] [max_ticks] [brief|full]  run tick engine");
     println!("  dump-ast <input.lisp>                          parse Lisp source and print AST");
     println!(
         "  compile-lisp <input.lisp> <out.bin>            compile Lisp source to binary image"
     );
     println!(
-        "  run-lisp <input.lisp> [schedule.txt] [max_ticks]  compile Lisp source and simulate it"
+        "  run-lisp <input.lisp> [schedule.txt] [max_ticks] [brief|full]  compile and simulate"
     );
 }
 
@@ -44,9 +45,14 @@ fn cmd_dump_image(path: &Path) -> Result<(), String> {
     Ok(())
 }
 
-fn cmd_sim_image(path: &Path, input_path: Option<&Path>, max_ticks: u64) -> Result<(), String> {
+fn cmd_sim_image(
+    path: &Path,
+    input_path: Option<&Path>,
+    max_ticks: u64,
+    trace_mode: TraceRenderMode,
+) -> Result<(), String> {
     let image = ProgramImage::read_from_file(path).map_err(|e| e.to_string())?;
-    run_image(&image, input_path, max_ticks)
+    run_image(&image, input_path, max_ticks, trace_mode)
 }
 
 fn cmd_dump_ast(path: &Path) -> Result<(), String> {
@@ -62,12 +68,17 @@ fn cmd_compile_lisp(input: &Path, output: &Path) -> Result<(), String> {
     write_program_outputs(&program, output)
 }
 
-fn cmd_run_lisp(input: &Path, input_path: Option<&Path>, max_ticks: u64) -> Result<(), String> {
+fn cmd_run_lisp(
+    input: &Path,
+    input_path: Option<&Path>,
+    max_ticks: u64,
+    trace_mode: TraceRenderMode,
+) -> Result<(), String> {
     let source = std::fs::read_to_string(input).map_err(|e| e.to_string())?;
     let program = compile_source(&source)?;
     let assembled = program.assemble()?;
     let image = ProgramImage::from_assembled(&assembled);
-    run_image(&image, input_path, max_ticks)
+    run_image(&image, input_path, max_ticks, trace_mode)
 }
 
 fn write_program_outputs(program: &AsmProgram, path: &Path) -> Result<(), String> {
@@ -91,6 +102,7 @@ fn run_image(
     image: &ProgramImage,
     input_path: Option<&Path>,
     max_ticks: u64,
+    trace_mode: TraceRenderMode,
 ) -> Result<(), String> {
     let mut machine = Machine::from_image(image)?;
     if let Some(path) = input_path {
@@ -109,26 +121,39 @@ fn run_image(
         String::from_utf8_lossy(&machine.input_device.lost_input)
     );
     println!();
-    println!("[trace]");
-    print!("{}", trace.render());
+    println!("[trace:{}]", trace_mode.name());
+    print!("{}", trace.render_mode(trace_mode));
     Ok(())
 }
 
-fn parse_run_args(args: &[String], start: usize) -> Result<(Option<&Path>, u64), String> {
+fn parse_run_args(
+    args: &[String],
+    start: usize,
+) -> Result<(Option<&Path>, u64, TraceRenderMode), String> {
     let mut input_path = None;
     let mut max_ticks = 1_000_u64;
-    if let Some(value) = args.get(start) {
-        match value.parse::<u64>() {
-            Ok(ticks) => max_ticks = ticks,
-            Err(_) => input_path = Some(Path::new(value)),
+    let mut trace_mode = TraceRenderMode::Brief;
+
+    for value in args.iter().skip(start) {
+        if let Some(mode) = TraceRenderMode::parse(value) {
+            trace_mode = mode;
+            continue;
         }
+
+        if let Ok(ticks) = value.parse::<u64>() {
+            max_ticks = ticks;
+            continue;
+        }
+
+        if input_path.is_none() {
+            input_path = Some(Path::new(value));
+            continue;
+        }
+
+        return Err(format!("unexpected extra argument: {value}"));
     }
-    if let Some(value) = args.get(start + 1) {
-        max_ticks = value
-            .parse::<u64>()
-            .map_err(|_| format!("invalid max_ticks: {value}"))?;
-    }
-    Ok((input_path, max_ticks))
+
+    Ok((input_path, max_ticks, trace_mode))
 }
 
 fn main() {
@@ -140,29 +165,29 @@ fn main() {
 
     let result = match args[1].as_str() {
         "dump-image" if args.len() == 3 => cmd_dump_image(Path::new(&args[2])),
-        "sim-image" if (3..=5).contains(&args.len()) => {
-            let (input_path, max_ticks) = match parse_run_args(&args, 3) {
+        "sim-image" if (3..=6).contains(&args.len()) => {
+            let (input_path, max_ticks, trace_mode) = match parse_run_args(&args, 3) {
                 Ok(value) => value,
                 Err(err) => {
                     eprintln!("error: {err}");
                     std::process::exit(1);
                 }
             };
-            cmd_sim_image(Path::new(&args[2]), input_path, max_ticks)
+            cmd_sim_image(Path::new(&args[2]), input_path, max_ticks, trace_mode)
         }
         "dump-ast" if args.len() == 3 => cmd_dump_ast(Path::new(&args[2])),
         "compile-lisp" if args.len() == 4 => {
             cmd_compile_lisp(Path::new(&args[2]), Path::new(&args[3]))
         }
-        "run-lisp" if (3..=5).contains(&args.len()) => {
-            let (input_path, max_ticks) = match parse_run_args(&args, 3) {
+        "run-lisp" if (3..=6).contains(&args.len()) => {
+            let (input_path, max_ticks, trace_mode) = match parse_run_args(&args, 3) {
                 Ok(value) => value,
                 Err(err) => {
                     eprintln!("error: {err}");
                     std::process::exit(1);
                 }
             };
-            cmd_run_lisp(Path::new(&args[2]), input_path, max_ticks)
+            cmd_run_lisp(Path::new(&args[2]), input_path, max_ticks, trace_mode)
         }
         _ => {
             print_usage();
