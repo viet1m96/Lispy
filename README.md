@@ -14,6 +14,7 @@ lisp | risc | neum | hw | tick | binary | trap | mem | pstr | prob1 | vector
 - [Организация памяти](#организация-памяти)
 - [Система команд](#система-команд)
 - [Система прерываний и trap](#система-прерываний-и-trap)
+- [Vector extension](#vector-extension)
 - [Транслятор](#транслятор)
 - [Модель процессора](#модель-процессора)
 - [Тестирование](#тестирование)
@@ -30,7 +31,7 @@ lisp | risc | neum | hw | tick | binary | trap | mem | pstr | prob1 | vector
 Язык поддерживает:
 
 - числовые литералы;
-- строковые литералы;
+- строковые литералы с escape-последовательностями;
 - булево истинное значение `t`;
 - ложное значение `nil`;
 - идентификаторы;
@@ -42,7 +43,9 @@ lisp | risc | neum | hw | tick | binary | trap | mem | pstr | prob1 | vector
 - `halt`;
 - приведения типов `as-int`, `as-i64`, `as-bool`, `as-string`;
 - рекурсивные пользовательские функции;
-- арифметические, логические, побитовые и строковые встроенные операции.
+- арифметические, логические, побитовые и строковые встроенные операции;
+- heap-массивы типа `:array`;
+- vector builtins `vadd`, `vsub`, `vmul`, `vdiv`, `vcmp`, работающие над массивами по 4 элемента за vector-step.
 
 ### Синтаксис (BNF)
 
@@ -87,6 +90,7 @@ lisp | risc | neum | hw | tick | binary | trap | mem | pstr | prob1 | vector
               | ":i64"
               | ":bool"
               | ":string"
+              | ":array"
 
 
 <setq-form> ::= "(" "setq" <identifier> <type-name> <expr> ")"
@@ -138,29 +142,59 @@ lisp | risc | neum | hw | tick | binary | trap | mem | pstr | prob1 | vector
              | <builtin-op>
 
 
-<builtin-op> ::= "+"
-               | "-"
-               | "*"
-               | "/"
-               | "%"
-               | "="
+<builtin-op> ::= <arith-op>
+               | <compare-op>
+               | <logic-op>
+               | <bit-op>
+               | <string-op>
+               | <array-op>
+               | <vector-op>
+
+
+<arith-op> ::= "+"
+             | "-"
+             | "*"
+             | "/"
+             | "%"
+
+
+<compare-op> ::= "="
                | "!="
                | "<"
                | "<="
                | ">"
                | ">="
-               | "and"
-               | "or"
-               | "not"
-               | "bit-and"
-               | "bit-or"
-               | "bit-xor"
-               | "shl"
-               | "shr"
-               | "sar"
-               | "strlen"
-               | "strget"
-               | "strset"
+
+
+<logic-op> ::= "and"
+             | "or"
+             | "not"
+
+
+<bit-op> ::= "bit-and"
+           | "bit-or"
+           | "bit-xor"
+           | "shl"
+           | "shr"
+           | "sar"
+
+
+<string-op> ::= "strlen"
+              | "strget"
+              | "strset"
+
+
+<array-op> ::= "array"
+             | "array-get"
+             | "array-set"
+             | "array-size"
+
+
+<vector-op> ::= "vadd"
+              | "vsub"
+              | "vmul"
+              | "vdiv"
+              | "vcmp"
 
 
 <boolean> ::= "t"
@@ -172,7 +206,13 @@ lisp | risc | neum | hw | tick | binary | trap | mem | pstr | prob1 | vector
            | "-" <digit> { <digit> }
 
 
-<string> ::= "\"" { <string-char> } "\""
+<string> ::= "\"" { <string-char> | <escape-seq> } "\""
+
+<escape-seq> ::= "\\n"
+               | "\\t"
+               | "\\r"
+               | "\\\\"
+               | "\\\""
 
 
 <identifier> ::= <identifier-head> { <identifier-tail> }
@@ -191,7 +231,7 @@ lisp | risc | neum | hw | tick | binary | trap | mem | pstr | prob1 | vector
 <letter> ::= "a" | "b" | "c" | ... | "z"
            | "A" | "B" | ... | "Z"
 
-<string-char> ::= любой символ, кроме `"` и перевода строки
+<string-char> ::= любой символ, кроме `"`, `\` и перевода строки
 ```
 
 ### Семантика
@@ -223,6 +263,7 @@ lisp | risc | neum | hw | tick | binary | trap | mem | pstr | prob1 | vector
 | `:i64` | 64-битное целое значение, представляемое двумя 32-битными словами |
 | `:bool` | булево значение; `t` кодируется как `1`, `nil` как `0` |
 | `:string` | указатель на строку в формате `pstr` |
+| `:array` | указатель на heap-массив 32-битных слов; используется обычными array builtins и vector builtins |
 
 `nil` используется как ложное значение и как нулевое значение в truthy-контексте. Отдельного литерала `false` нет.
 
@@ -236,6 +277,60 @@ lisp | risc | neum | hw | tick | binary | trap | mem | pstr | prob1 | vector
 
 (setq x :int (sum2 10 20))
 (print x)
+```
+
+#### Массивы и vector builtins
+
+Массив создаётся выражением `(array size)`. Оно возвращает значение типа `:array`. Все элементы массива — 32-битные слова. При создании массив заполняется нулями.
+
+```lisp
+(setq a :array (array 4))
+(array-set a 0 10)
+(array-set a 1 20)
+(print (array-get a 1))
+```
+
+Операции над массивами:
+
+| Операция | Аргументы | Результат | Семантика |
+|---|---|---|---|
+| `array` | `size :int` | `:array` | создать heap-массив размера `size` |
+| `array-get` | `array :array`, `index :int` | `:int` | прочитать элемент |
+| `array-set` | `array :array`, `index :int`, `value :int` | `:int` | записать элемент и вернуть записанное значение |
+| `array-size` | `array :array` | `:int` | вернуть количество элементов |
+
+Vector builtins принимают три массива: destination, left, right. Размеры всех трёх массивов должны совпадать. Возвращается destination array, поэтому результат можно использовать как обычное выражение.
+
+| Операция | Семантика |
+|---|---|
+| `(vadd dst left right)` | `dst[i] = left[i] + right[i]` |
+| `(vsub dst left right)` | `dst[i] = left[i] - right[i]` |
+| `(vmul dst left right)` | `dst[i] = left[i] * right[i]` |
+| `(vdiv dst left right)` | `dst[i] = left[i] / right[i]` как signed division |
+| `(vcmp dst left right)` | `dst[i] = 1`, если `left[i] == right[i]`, иначе `0` |
+
+Компилятор строит vector loop по 4 элемента и scalar tail для элементов, оставшихся после деления размера на 4.
+
+```lisp
+(setq a :array (array 5))
+(setq b :array (array 5))
+(setq c :array (array 5))
+
+(array-set a 0 1)
+(array-set a 1 2)
+(array-set a 2 3)
+(array-set a 3 4)
+(array-set a 4 5)
+
+(array-set b 0 10)
+(array-set b 1 20)
+(array-set b 2 30)
+(array-set b 3 40)
+(array-set b 4 50)
+
+(vadd c a b)
+(print (array-get c 0)) ; 11
+(print (array-get c 4)) ; 55, scalar tail
 ```
 
 ---
@@ -252,7 +347,9 @@ lisp | risc | neum | hw | tick | binary | trap | mem | pstr | prob1 | vector
 - машинное слово — 32 бита;
 - инструкция — 32 бита;
 - word access требует выравнивания по 4 байтам;
-- ввод-вывод реализован через memory-mapped I/O.
+- логическое адресное пространство составляет `2^32` байт, то есть 4 GiB;
+- ввод-вывод реализован через memory-mapped I/O;
+- vector load/store обращается к памяти по 32-битным lane, то есть каждый lane также требует word alignment.
 
 ### Разбиение адресного пространства
 
@@ -261,7 +358,7 @@ lisp | risc | neum | hw | tick | binary | trap | mem | pstr | prob1 | vector
 | `.text` | `0x0000_0000` | таблица векторов trap, машинный код, функции, runtime-процедуры |
 | `.rodata` | `0x0001_0000` | зарезервированная область для неизменяемых данных |
 | `.data` | `0x0002_0000` | глобальные переменные, `pstr`-литералы, служебные runtime-слоты |
-| `heap` | `0x0003_0000` | динамически создаваемые строки, например результат `read-line` |
+| `heap` | `0x0003_0000` | динамически создаваемые строки и массивы |
 | `stack_top` | `0x000f_0000` | начальная вершина стека; стек растёт вниз |
 | `mmio` | `0x00ff_0000` | memory-mapped I/O регистры |
 
@@ -292,7 +389,19 @@ lisp | risc | neum | hw | tick | binary | trap | mem | pstr | prob1 | vector
 
 #### Vector-регистры
 
-В ISA зарезервированы vector-регистры `v0..v7`, каждый содержит 4 lane по 32 бита.
+| Регистр | Размер | Назначение |
+|---|---:|---|
+| `v0..v7` | 4 lane × 32 бита | vector register file для vector load/store и lane-wise ALU операций |
+
+Дополнительно в vector datapath используются служебные регистры и combinational-блоки:
+
+| Регистр / блок           | Назначение                                           |
+| ------------------------ | ---------------------------------------------------- |
+| `VectorBaseRegister`     | базовый адрес текущего `vld` или `vst`               |
+| `LaneCounterRegister`    | номер lane, который сейчас читается или записывается |
+| `LaneOffsetShifter`      | вычисляет смещение lane: `lane * 4`                  |
+| `VectorLaneAddressAdder` | вычисляет адрес текущего lane: `base + lane * 4`     |
+| `LaneComparator`         | определяет, обработан ли последний lane              |
 
 ### Размещение объектов языка
 
@@ -309,6 +418,8 @@ lisp | risc | neum | hw | tick | binary | trap | mem | pstr | prob1 | vector
 | _start: main program entry                       |
 |                                                  |
 | fn_<name>: user functions                        |
+|                                                  |
+| generated vector loops for vadd/vsub/...         |
 |                                                  |
 | __rt_print_int                                   |
 | __rt_print_pstr                                  |
@@ -343,6 +454,11 @@ lisp | risc | neum | hw | tick | binary | trap | mem | pstr | prob1 | vector
 +--------------------------------------------------+
 | heap                                             |
 | dynamic pstr objects created by read-line        |
+| dynamic arrays created by array                  |
+|   +0 : size                                      |
+|   +4 : elem[0]                                   |
+|   +8 : elem[1]                                   |
+|   ...                                            |
 +--------------------------------------------------+
 
         ...
@@ -380,6 +496,21 @@ addr + 8  : char[1]
 
 Каждый символ занимает одно машинное слово. `length` хранит количество символов.
 
+### Формат массивов `:array`
+
+Массив хранится в heap как последовательность 32-битных слов:
+
+```text
+addr + 0  : size
+addr + 4  : elem[0]
+addr + 8  : elem[1]
+addr + 12 : elem[2]
+addr + 16 : elem[3]
+...
+```
+
+`array` выделяет блок в heap, записывает размер в первый word, затем обнуляет элементы. Heap pointer хранится в runtime-slot `__rt_heap_ptr` и сдвигается на `4 + size * 4` байт. В `array-get` и `array-set` компилятор генерирует runtime-проверку индекса: `0 <= index < size`. При нарушении проверки печатается сообщение об ошибке и выполняется `halt`.
+
 ### MMIO
 
 | Смещение от `mmio_base` | Имя | Доступ | Назначение |
@@ -400,7 +531,7 @@ addr + 8  : char[1]
 
 | Формат | Назначение |
 |---|---|
-| R | операции над регистрами |
+| R | операции над scalar-регистрами |
 | I | immediate, load, `jalr`, system-special |
 | S | store |
 | B | условные переходы |
@@ -473,21 +604,21 @@ addr + 8  : char[1]
 
 ### Vector-инструкции ISA
 
-Vector-инструкции имеют кодирование в ISA и могут быть декодированы. Их execute path зарезервирован для vector-расширения.
+Vector-инструкции реализованы в ISA, декодере, Control Unit, DataPath и трассировке. Vector register file содержит `v0..v7`, каждый vector-регистр содержит 4 lane по 32 бита.
 
 | Инструкция | Формат | opcode | funct3 | funct7 | Назначение |
 |---|---|---|---|---|---|
-| `vld vd, off(rs1)` | Vector I | `0000111` | `000` | — | загрузка vector-регистра |
-| `vst vs, off(rs1)` | Vector S | `0100111` | `000` | — | запись vector-регистра |
+| `vld vd, off(rs1)` | Vector I | `0000111` | `000` | — | загрузить 4 последовательных 32-битных слова из памяти в `vd` |
+| `vst vs, off(rs1)` | Vector S | `0100111` | `000` | — | записать 4 lane из `vs` в память |
 | `vadd vd, vs1, vs2` | Vector R | `1010111` | `000` | `0000000` | lane-wise сложение |
 | `vsub vd, vs1, vs2` | Vector R | `1010111` | `000` | `0100000` | lane-wise вычитание |
 | `vmul vd, vs1, vs2` | Vector R | `1010111` | `001` | `0000001` | lane-wise умножение |
-| `vdiv vd, vs1, vs2` | Vector R | `1010111` | `100` | `0000001` | lane-wise деление |
-| `vcmpeq vd, vs1, vs2` | Vector R | `1010111` | `010` | `0000000` | lane-wise сравнение на равенство |
+| `vdiv vd, vs1, vs2` | Vector R | `1010111` | `100` | `0000001` | lane-wise signed деление |
+| `vcmpeq vd, vs1, vs2` | Vector R | `1010111` | `010` | `0000000` | lane-wise сравнение на равенство; результат lane — `0` или `1` |
 
 ### Количество тактов
 
-Скалярные инструкции исполняются за два такта:
+Модель является tick-accurate. Один вызов `step_tick` моделирует один такт. Fetch всегда занимает отдельный такт.
 
 #### T1 — Fetch
 
@@ -496,7 +627,7 @@ Vector-инструкции имеют кодирование в ISA и могу
 - значение записывается в `IR`;
 - `PC + 4` вычисляется как подготовленное значение для следующего такта.
 
-#### T2 — Execute
+#### T2 — Execute для scalar-инструкций
 
 В зависимости от инструкции выполняются:
 
@@ -508,7 +639,19 @@ Vector-инструкции имеют кодирование в ISA и могу
 - writeback в register file;
 - выбор следующего `PC`.
 
-`trap_enter` является отдельной фазой и занимает один такт. `mret` является обычной scalar-инструкцией и занимает два такта.
+Скалярные инструкции исполняются за два такта: `Fetch + Execute`.
+
+#### Vector 
+
+| Инструкция / фаза | Такты | Описание |
+|---|---:|---|
+| scalar `lui/addi/lw/sw/R/branch/jal/jalr/mret/halt` | 2 | `Fetch + Execute` |
+| `VectorR` (`vadd/vsub/vmul/vdiv/vcmpeq`) | 2 | `Fetch + Execute`, VectorALU сразу считает все 4 lane |
+| `vld` | 6 | `Fetch + Execute setup + 4 × VecOp lane read` |
+| `vst` | 6 | `Fetch + Execute setup + 4 × VecOp lane write` |
+| `trap_enter` | 1 | отдельная фаза после завершения инструкции или vector memory operation |
+
+Для `vld` и `vst` фаза `Execute` не изменяет `PC`; она вычисляет base address и сбрасывает lane counter. Далее Control Unit переходит в `VecOp`. В каждом такте `VecOp` обрабатывается один lane. Тип операции (`vld` или `vst`) берётся из текущей инструкции в `IR`. После lane 3 счётчик очищается, `PC` получает `PC + 4`, и процессор возвращается к `Fetch` или переходит в `TrapEnter`, если ожидается interrupt.
 
 ---
 
@@ -560,6 +703,8 @@ irq_pending && mstatus.MIE && !mstatus.IN_TRAP
 10. Handler читает `MMIO_IN_DATA`, затем записывает ненулевое значение в `MMIO_IRQ_ACK`.
 11. При выполнении `mret` процессор восстанавливает `PC = mepc`, сбрасывает `IN_TRAP` и снова устанавливает `MIE = 1`.
 
+Если interrupt приходит во время `vld` или `vst`, Control Unit не прерывает середину vector memory operation. Запрос обслуживается после завершения последнего lane, чтобы состояние vector register file и памяти не осталось частично обновлённым с точки зрения инструкции.
+
 ### Default input handler
 
 Если пользователь не объявил собственный handler с именем `__default_input_handler`, runtime добавляет default handler. Его задача:
@@ -589,16 +734,146 @@ irq_pending && mstatus.MIE && !mstatus.IN_TRAP
 
 ---
 
+## Vector extension
+
+### Цель расширения
+
+Vector extension добавляет аппаратную поддержку обработки массивов по 4 элемента за одну vector ALU operation и по одному lane за такт при vector load/store. На уровне языка это расширение не вводит отдельный тип `:vector`: программист работает с обычными `:array`, а компилятор сам генерирует инструкции `vld`, `vst` и `VectorR`.
+
+### Программная модель
+
+- vector-регистры: `v0..v7`;
+- ширина vector-регистра: 4 lane × 32 бита;
+- размер vector chunk: 16 байт;
+- `vld`/`vst` работают с 4 последовательными 32-битными словами;
+- vector ALU выполняет `vadd`, `vsub`, `vmul`, `vdiv`, `vcmpeq` сразу над четырьмя lane.
+
+### Компиляция vector builtins
+
+Для выражения:
+
+```lisp
+(vadd dst left right)
+```
+
+compiler генерирует следующий шаблон:
+
+1. вычислить адреса `dst`, `left`, `right`;
+2. прочитать размеры `left` и `right`;
+3. проверить равенство размеров `left` и `right`;
+4. прочитать размер `dst`;
+5. проверить равенство размера `dst` и размера `left`;
+6. сдвинуть указатели на первый элемент: `array_ptr + 4`;
+7. вычислить количество vector-итераций: `size >> 2`;
+8. вычислить количество оставшихся scalar-элементов: `size & 3`;
+9. для каждой vector-итерации выполнить:
+   - `vld v0, 0(left_ptr)`;
+   - `vld v1, 0(right_ptr)`;
+   - `vadd/vsub/vmul/vdiv/vcmpeq v2, v0, v1`;
+   - `vst v2, 0(dst_ptr)`;
+   - увеличить все указатели на 16 байт;
+10. выполнить scalar tail loop для `size % 4` элементов;
+11. вернуть `dst` как результат выражения.
+
+
+## Сравнение scalar loop и vector extension
+
+
+Для демонстрации преимущества vector extension были подготовлены две Lisp-программы, выполняющие одну и ту же задачу: сложение двух массивов из 9 элементов и сохранение результата в третий массив.  
+  
+Первая программа использует обычный scalar loop и обрабатывает элементы массива по одному. Вторая программа использует builtin `vadd`, который транслируется в vector-инструкции `vld`, `vadd`, `vst` для блоков по 4 элемента и scalar fallback для оставшихся элементов.
+
+**По обычному:**
+```lisp
+(begin
+  (let ((a :array (array 9))
+        (b :array (array 9))
+        (c :array (array 9))
+        (i :int 0))
+
+    (array-set a 0 1)
+    (array-set a 1 2)
+    (array-set a 2 3)
+    (array-set a 3 4)
+    (array-set a 4 5)
+    (array-set a 5 6)
+    (array-set a 6 7)
+    (array-set a 7 8)
+    (array-set a 8 9)
+
+    (array-set b 0 10)
+    (array-set b 1 20)
+    (array-set b 2 30)
+    (array-set b 3 40)
+    (array-set b 4 50)
+    (array-set b 5 60)
+    (array-set b 6 70)
+    (array-set b 7 80)
+    (array-set b 8 90)
+
+    (loop while (< i 9) do
+      (array-set c i (+ (array-get a i) (array-get b i)))
+      (setq i :int (+ i 1))
+      finally c)
+    (halt)))
+
+```
+**По вектору:**
+``` lisp
+(begin
+  (let ((a :array (array 9))
+        (b :array (array 9))
+        (c :array (array 9)))
+
+    (array-set a 0 1)
+    (array-set a 1 2)
+    (array-set a 2 3)
+    (array-set a 3 4)
+    (array-set a 4 5)
+    (array-set a 5 6)
+    (array-set a 6 7)
+    (array-set a 7 8)
+    (array-set a 8 9)
+
+    (array-set b 0 10)
+    (array-set b 1 20)
+    (array-set b 2 30)
+    (array-set b 3 40)
+    (array-set b 4 50)
+    (array-set b 5 60)
+    (array-set b 6 70)
+    (array-set b 7 80)
+    (array-set b 8 90)
+
+    (vadd c a b)
+
+    (halt)))
+
+```
+
+**Сравнение:**
+
+| Реализация              |     Instructions |       Ticks |
+| ----------------------- | ---------------: | ----------: |
+| Scalar loop, без `vadd` |              729 |        2394 |
+| Vector `vadd`           |              682 |        1228 |
+| Разница                 | -47 instructions | -1166 ticks |
+
+Vector-реализация уменьшила размер машинного кода на 47 инструкций и сократила время исполнения на 1166 тактов. 
+По числу тактов программа с `vadd` выполняется примерно в 1.95 раза быстрее, чем scalar loop.
+
+---
+
 ## Транслятор
 
 ### Интерфейс командной строки
 
 ```text
 dump-image <input.bin>
-sim-image <input.bin> [schedule.txt] [max_ticks]
+sim-image <input.bin> [schedule.txt] [max_ticks] [brief|full]
 dump-ast <input.lisp>
 compile-lisp <input.lisp> <out.bin>
-run-lisp <input.lisp> [schedule.txt] [max_ticks]
+run-lisp <input.lisp> [schedule.txt] [max_ticks] [brief|full]
 ```
 
 Назначение команд:
@@ -609,7 +884,8 @@ run-lisp <input.lisp> [schedule.txt] [max_ticks]
 - `compile-lisp` — скомпилировать Lisp в binary image и `.lst`;
 - `run-lisp` — выполнить полный путь: Lisp → binary image → simulation.
 
-Если после имени программы передан числовой аргумент, он трактуется как `max_ticks`. Если передан нечисловой аргумент, он трактуется как путь к schedule-файлу ввода.
+Если после имени программы передан числовой аргумент, он трактуется как `max_ticks`. Если передан нечисловой аргумент, он трактуется как путь к schedule-файлу ввода. Для `sim-image` и `run-lisp` дополнительно можно выбрать режим трассировки: `brief` или `full`. По умолчанию используется `brief`.
+
 
 ### Этапы компиляции
 
@@ -620,12 +896,22 @@ run-lisp <input.lisp> [schedule.txt] [max_ticks]
 5. Эмиссия trap vector table.
 6. Компиляция top-level форм.
 7. Компиляция пользовательских функций.
-8. Добавление runtime-процедур.
-9. Сборка `.text`, `.rodata`, `.data`.
-10. Разрешение меток.
-11. Кодирование инструкций в 32-битные слова.
-12. Сериализация в binary image `AKIM`.
-13. Генерация `.lst` listing-файла.
+8. Компиляция array/vector builtins в scalar/vector ISA.
+9. Добавление runtime-процедур.
+10. Сборка `.text`, `.rodata`, `.data`.
+11. Разрешение меток.
+12. Кодирование инструкций в 32-битные слова.
+13. Сериализация в binary image `AKIM`.
+14. Генерация `.lst` listing-файла.
+
+### Размещение переменных при компиляции
+
+- Глобальный `setq` создаёт label в `.data`.
+- Локальные переменные `let` и параметры функций размещаются в stack frame.
+- Значения `:int`, `:bool`, `:string`, `:array` занимают одно 32-битное слово.
+- Значение `:i64` занимает два 32-битных слова: low word и high word.
+- Для временных значений используются `t0..t6`, `a0..a7` и stack spill через helper-ы `push_reg` / `pop_reg`.
+- Аргументы функции передаются через `a0..a7`; `:i64` занимает два argument-word.
 
 ### Binary image
 
@@ -655,72 +941,137 @@ Binary image содержит:
 - флаг остановки и причину остановки;
 - память;
 - trap state;
+- vector state;
 - input device;
 - interrupt lines.
 
-### DataPath
+### DataPath и Control Unit
 
-![Datapath](fig/datapath_lab4_with_trap.png)
+Раздел подготовлен под пять схем: общий datapath, scalar datapath, trap extension, vector extension и Control Unit. До добавления финальных изображений в репозиторий здесь оставлены стабильные markdown-placeholders.
 
-Основные блоки datapath:
+#### 1.   Общий DataPath
 
-- `PC`;
-- `IR`;
-- register file;
-- immediate generator;
-- ALU;
-- branch comparator;
-- branch decision через Control Unit;
+<!-- TODO: вставить изображение общего datapath -->
+![Datapath overview](fig/Full_datapath.png)
+
+#### 2. Scalar datapath
+
+<!-- TODO: вставить изображение scalar datapath -->
+![Scalar datapath](fig/Scalar_datapath.png)
+
+Scalar datapath содержит основную часть процессора, которая исполняет обычные RISC-инструкции без trap- и vector-расширений:
+
+- `PC` и `IR`;
+- `RegisterFile` для scalar-регистров `x0..x31`;
+- `ImmGen` для I/S/B/U/J immediate;
+- `OpA MUX` и `OpB MUX`;
+- scalar `ALU`;
+- `BranchComparator` и branch decision path;
 - `PC + 4` adder;
-- memory address mux;
-- writeback mux;
-- PC mux;
-- trap vector address generator;
-- trap block registers.
+- `MemoryBlock`;
+- `MemAddr MUX`;
+- `MemWriteData MUX`;
+- `WriteBack MUX`;
+- `PC MUX`.
 
-### Control Unit
 
-![ControlUnit](fig/CU_lab4_with_trap.png)
+#### 3. Trap extension
+
+<!-- TODO: вставить изображение trap extension -->
+![Trap extension](fig/Trap_extension.png)
+
+Trap extension добавляет к datapath:
+
+- `mstatus` с флагами `MIE` и `IN_TRAP`;
+- `vtor` — base address таблицы векторов;
+- `mepc` — адрес возврата;
+- `TrapVectorAddressGenerator`, вычисляющий `vtor + irq_id * 4`;
+- входы `irq_pending` и `irq_id` от input device;
+
+
+#### 4. Vector extension
+
+<!-- TODO: вставить изображение vector extension -->
+![Vector extension](fig/Vector_extension.png)
+
+Vector extension добавляет к datapath:
+
+- `VectorRegisterFile` из `v0..v7`;
+- `VectorALU` для lane-wise операций;
+- `VectorBaseRegister`;
+- `LaneCounterRegister`;
+- `LaneOffsetShifter`, вычисляющий `lane * 4`;
+- `LaneComparator`, определяющий последний lane;
+
+
+#### 5. Control Unit
+
+<!-- TODO: вставить изображение Control Unit -->
+![Control Unit](fig/Control_unit.png)
 
 Control Unit является hardwired. Основные внутренние блоки:
 
-- state register;
-- instruction decoder;
-- ALU decoder;
-- branch decision logic;
-- interrupt request logic;
-- control signal generator;
-- next state logic.
+- `StateRegister`;
+- `InstructionDecoder`;
+- `AluDecoder`;
+- `BranchDecision`;
+- `InterruptRequestLogic`;
+- `ControlSignalGenerator`;
+- `NextStateLogic`.
+
 
 ### Фазы работы
 
-| Фаза | Назначение |
-|---|---|
-| `Fetch` | чтение инструкции по `PC` и запись в `IR` |
-| `Execute` | выполнение инструкции, memory access, writeback, обновление `PC` |
-| `TrapEnter` | вход в handler: чтение vector table, запись `mepc`, обновление `mstatus`, загрузка `PC` handler-а |
-| `Halt` | остановка модели |
+| Фаза        | Назначение                                                                                                      |
+| ----------- | --------------------------------------------------------------------------------------------------------------- |
+| `Fetch`     | чтение инструкции по `PC` и запись в `IR`                                                                       |
+| `Execute`   | выполнение scalar-инструкции, setup vector memory operation, VectorR, memory access, writeback, обновление `PC` |
+| `VecOp`     | lane-by-lane выполнение `vld` или `vst`                                                                         |
+| `TrapEnter` | вход в handler: чтение vector table, запись `mepc`, обновление `mstatus`, загрузка `PC` handler-а               |
+| `Halt`      | остановка модели                                                                                                |
 
-### Основные управляющие сигналы
+### Основные управляющие сигналы на схемах
 
-| Сигнал | Назначение |
-|---|---|
-| `pc_wr` | разрешение записи в `PC` |
-| `ir_wr` | разрешение записи в `IR` |
-| `reg_wr` | разрешение записи в register file |
-| `mem_rd` | чтение памяти |
-| `mem_wr` | запись памяти |
-| `halt_req` | запрос остановки |
-| `trap_enter` | вход в trap |
-| `trap_exit` | выход из trap через `mret` |
-| `addr_sel` | выбор адреса памяти: `PC`, `ALU_out`, trap vector address |
-| `opa_sel` | выбор первого операнда ALU: `PC` или `rs1` |
-| `opb_sel` | выбор второго операнда ALU: `rs2` или immediate |
-| `imm_sel` | тип immediate: I/S/B/U/J/None |
-| `alu_op` | операция ALU |
-| `wb_sel` | источник writeback: ALU, memory, `PC+4`, upper immediate |
-| `pc_sel` | источник следующего `PC`: `PC+4`, ALU target, branch, trap vector, `mepc` |
-| `take_branch` | результат branch decision |
+| Сигнал                 | Назначение                                                                                             |
+| ---------------------- | ------------------------------------------------------------------------------------------------------ |
+| `pc_wr`                | разрешение записи нового значения в `PC`                                                               |
+| `ir_wr`                | разрешение записи инструкции из `mem_out` в `IR`                                                       |
+| `reg_wr`               | разрешение записи в scalar `Register File`                                                             |
+| `read`                 | разрешение чтения из памяти                                                                            |
+| `wr`                   | разрешение записи в память                                                                             |
+| `addr_sel`             | выбор источника адреса для `MemAddr MUX`: `PC`, `ALU_out`, trap vector address или vector lane address |
+| `WrData_sel`           | выбор данных для записи в память: `rs2` или `vec_lane_out`                                             |
+| `wb_sel`               | выбор источника scalar writeback: `ALU_out`, `mem_out`, `PC+4` или `U-imm`                             |
+| `pc_sel`               | выбор следующего значения `PC`: `PC+4`, `ALU_out`, trap handler address или `mepc`                     |
+| `OpA_sel`              | выбор первого операнда scalar ALU: `PC` или `rs1`                                                      |
+| `OpB_sel`              | выбор второго операнда scalar ALU: `rs2` или immediate                                                 |
+| `imm_sel` / `imm_type` | выбор типа immediate для `Immediate Generator`: `I`, `S`, `B`, `U`, `J` или `None`                     |
+| `alu_op`               | выбор операции scalar ALU                                                                              |
+| `trap_op`              | управление trap-блоком: вход в trap или выход через `mret`                                             |
+| `vec_base_wr`          | разрешение записи `ALU_out` в `Vector Base Register`                                                   |
+| `lane_counter_rst`     | сброс `Lane Counter Register` перед началом `vld`/`vst`                                                |
+| `lane_counter_wr`      | разрешение обновления `Lane Counter Register` после обработки lane                                     |
+| `vec_lane_wr`          | разрешение записи одного lane из `mem_out` в `Vector Register File`, используется в `vld`              |
+| `vec_lane_read`        | разрешение чтения одного lane из `Vector Register File` в `vec_lane_out`, используется в `vst`         |
+| `vec_full_wr`          | разрешение записи полного vector-регистра результатом `VectorALU`, используется в `VectorR`            |
+| `vec_alu_op`           | выбор операции `VectorALU`: `vadd`, `vsub`, `vmul`, `vdiv`, `vcmpeq`                                   |
+| `take_branch`          | результат `Branch Decision`, используется Control Unit для выбора следующего `PC`                      |
+| `halt_req`             | запрос перехода процессора в состояние `HALT`                                                          |
+| `irq_req`              | запрос входа в trap, формируется `Interrupt Request Logic`                                             |
+| `irq_pending`          | входной сигнал: есть ожидающее прерывание от устройства                                                |
+| `mie`                  | входной флаг из `mstatus`: разрешены прерывания                                                        |
+| `in_trap`              | входной флаг из `mstatus`: процессор уже находится в trap handler                                      |
+| `lane_done`            | результат `Lane Comparator`: обработан последний lane vector memory operation                          |
+| `EQ/LT/GT`             | флаги `Branch Comparator` для условных переходов                                                       |
+| `branch_type`          | тип branch-инструкции для `Branch Decision`                                                            |
+| `is_branch`            | признак того, что текущая инструкция является branch                                                   |
+| `instr_class`          | класс декодированной инструкции для `Control Signal Generator`                                         |
+| `funct3`, `funct7`     | поля инструкции, используемые `ALU Decoder`                                                            |
+| `alu_decode_info`      | информация из декодера инструкции для выбора операции ALU                                              |
+| `state`                | текущее состояние `State Register`: `FETCH`, `EXEC`, `VEC_OP`, `TRAP_ENTER`, `HALT`                    |
+| `next_state`           | следующее состояние, вычисленное `Next-State Logic`                                                    |
+
+
 
 ### Точность моделирования
 
@@ -740,6 +1091,11 @@ Trace содержит:
 - действия datapath;
 - события input device.
 
+Есть два режима:
+
+- `brief` — компактная трасса с tags: `input`, `out`, `ack`, `trap`, `vector`, `mret`, `branch=taken`, `halt`;
+- `full` — подробная трасса с `CU/in`, `CU/out` и действиями datapath.
+
 ---
 
 ## Тестирование
@@ -749,6 +1105,7 @@ Trace содержит:
 ```bash
 ./run_test.sh
 ```
+
 
 ---
 
@@ -776,6 +1133,12 @@ cargo run -- run-lisp examples/01_print_hello_world/01_hello.lisp 100000
 
 ```bash
 cargo run -- run-lisp examples/09_hello_user_name/09_hello_user_name.lisp examples/09_hello_user_name/input.txt 100000
+```
+
+Запуск симуляции по исходнику с подробной трассой:
+
+```bash
+cargo run -- run-lisp examples/09_hello_user_name/09_hello_user_name.lisp examples/09_hello_user_name/input.txt 100000 full
 ```
 
 Запуск симуляции по бинарному образу:
