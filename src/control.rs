@@ -59,13 +59,6 @@ pub enum WbSel {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum VecWbSel {
-    None,
-    MemLane,
-    Alu,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PcSel {
     PcPlus4,
     AluTarget,
@@ -112,12 +105,12 @@ pub struct ControlSignals {
     pub trap_enter: bool,
     pub trap_exit: bool,
     pub start_vec_op: bool,
-    pub vector_mem_op_write: bool,
     pub vector_base_write: bool,
     pub lane_counter_reset: bool,
     pub lane_counter_inc: bool,
     pub vector_lane_write: bool,
-    pub vector_reg_write: bool,
+    pub vector_lane_read: bool,
+    pub vector_full_write: bool,
 
     pub addr_sel: MemAddrSel,
     pub opa_sel: OpASel,
@@ -126,7 +119,6 @@ pub struct ControlSignals {
     pub pc_sel: PcSel,
     pub imm_sel: ImmSel,
     pub mem_write_data_sel: MemWriteDataSel,
-    pub vector_wb_sel: VecWbSel,
 
     pub alu_op: Option<AluRKind>,
     pub vector_alu_op: Option<VectorRKind>,
@@ -149,12 +141,12 @@ impl ControlSignals {
             trap_enter: false,
             trap_exit: false,
             start_vec_op: false,
-            vector_mem_op_write: false,
             vector_base_write: false,
             lane_counter_reset: false,
             lane_counter_inc: false,
             vector_lane_write: false,
-            vector_reg_write: false,
+            vector_lane_read: false,
+            vector_full_write: false,
             addr_sel: MemAddrSel::Pc,
             opa_sel: OpASel::Rs1,
             opb_sel: OpBSel::Rs2,
@@ -162,7 +154,6 @@ impl ControlSignals {
             pc_sel: PcSel::PcPlus4,
             imm_sel: ImmSel::None,
             mem_write_data_sel: MemWriteDataSel::Rs2,
-            vector_wb_sel: VecWbSel::None,
             alu_op: None,
             vector_alu_op: None,
             branch_kind: None,
@@ -173,7 +164,7 @@ impl ControlSignals {
 
     pub fn signal_summary(&self) -> String {
         format!(
-            "pc_wr={} ir_wr={} reg_wr={} mem_rd={} mem_wr={} addr_sel={:?} opa_sel={:?} opb_sel={:?} imm_sel={:?} alu_op={:?} wb_sel={:?} pc_sel={:?} halt_req={} trap_enter={} trap_exit={} start_vec_op={} vmemop_wr={} vbase_wr={} lane_counter_rst={} lane_counter_inc={} vector_lane_wr={} vreg_wr={} vwb_sel={:?} valu_op={:?} take_branch={:?}",
+            "pc_wr={} ir_wr={} reg_wr={} mem_rd={} mem_wr={} addr_sel={:?} opa_sel={:?} opb_sel={:?} imm_sel={:?} alu_op={:?} wb_sel={:?} pc_sel={:?} halt_req={} trap_enter={} trap_exit={} start_vec_op={} vbase_wr={} lane_counter_rst={} lane_counter_inc={} vec_lane_wr={} vec_lane_rd={} vec_full_wr={} vec_alu_op={:?} take_branch={:?}",
             bit(self.pc_write),
             bit(self.ir_write),
             bit(self.reg_write),
@@ -190,13 +181,12 @@ impl ControlSignals {
             bit(self.trap_enter),
             bit(self.trap_exit),
             bit(self.start_vec_op),
-            bit(self.vector_mem_op_write),
             bit(self.vector_base_write),
             bit(self.lane_counter_reset),
             bit(self.lane_counter_inc),
             bit(self.vector_lane_write),
-            bit(self.vector_reg_write),
-            self.vector_wb_sel,
+            bit(self.vector_lane_read),
+            bit(self.vector_full_write),
             self.vector_alu_op,
             self.take_branch,
         )
@@ -454,7 +444,6 @@ impl ControlSignalGenerator {
                 sig.pc_write = false;
                 sig.opa_sel = OpASel::Rs1;
                 sig.opb_sel = OpBSel::Imm;
-                sig.vector_mem_op_write = true;
                 sig.vector_base_write = true;
                 sig.lane_counter_reset = true;
                 sig.start_vec_op = true;
@@ -463,14 +452,12 @@ impl ControlSignalGenerator {
                 sig.pc_write = false;
                 sig.opa_sel = OpASel::Rs1;
                 sig.opb_sel = OpBSel::Imm;
-                sig.vector_mem_op_write = true;
                 sig.vector_base_write = true;
                 sig.lane_counter_reset = true;
                 sig.start_vec_op = true;
             }
             InstrClass::VectorR => {
-                sig.vector_reg_write = true;
-                sig.vector_wb_sel = VecWbSel::Alu;
+                sig.vector_full_write = true;
                 sig.vector_alu_op = decoded.vector_op;
                 sig.pc_sel = PcSel::PcPlus4;
             }
@@ -495,10 +482,10 @@ impl ControlSignalGenerator {
             InstrClass::VectorLoad => {
                 sig.mem_read = true;
                 sig.vector_lane_write = true;
-                sig.vector_wb_sel = VecWbSel::MemLane;
             }
             InstrClass::VectorStore => {
                 sig.mem_write = true;
+                sig.vector_lane_read = true;
                 sig.mem_write_data_sel = MemWriteDataSel::VecLane;
             }
             other => {
@@ -607,7 +594,10 @@ impl ControlInternalSignals {
             .map(|d| {
                 format!(
                     "instr_class={:?} imm_sel={:?} branch_kind={:?} vector_op={:?}",
-                    d.instr_class, d.imm_sel, d.branch_kind, d.vector_op,
+                    d.instr_class,
+                    d.imm_sel,
+                    d.branch_kind,
+                    d.vector_op,
                 )
             })
             .unwrap_or_else(|| {
@@ -628,10 +618,7 @@ impl ControlInternalSignals {
             })
             .unwrap_or_else(|| "BranchDecision(None)".to_string());
 
-        let lane = self
-            .lane_done_in
-            .map(|done| format!(" LaneComparator(lane_done={})", bit(done)))
-            .unwrap_or_default();
+        let lane = self.lane_done_in.map(|done| format!(" LaneComparator(lane_done={})", bit(done))).unwrap_or_default();
 
         let irq = match (self.irq_pending_in, self.mie_in, self.in_trap_in) {
             (Some(pending), Some(mie), Some(in_trap)) => format!(
@@ -769,9 +756,9 @@ impl ControlUnit {
         }
 
         let signals = self.signal_generator.fetch_signals();
-        let next_state =
-            self.next_state_logic
-                .next_state(current, signals.halt_req, false, false, false);
+        let next_state = self
+            .next_state_logic
+            .next_state(current, signals.halt_req, false, false, false);
         let mut internal = ControlInternalSignals::fetch(current, next_state);
         internal.irq_req = false;
         Ok(ControlStep { signals, internal })
@@ -810,13 +797,9 @@ impl ControlUnit {
             .execute_signals(decoded, alu_op, branch_decision)?;
         let irq_req = self.interrupt_request_logic.eval(irq_input);
         let effective_irq = irq_req && !signals.halt_req && !signals.start_vec_op;
-        let next_state = self.next_state_logic.next_state(
-            current,
-            signals.halt_req,
-            effective_irq,
-            signals.start_vec_op,
-            false,
-        );
+        let next_state = self
+            .next_state_logic
+            .next_state(current, signals.halt_req, effective_irq, signals.start_vec_op, false);
         let internal = ControlInternalSignals::execute(
             current,
             next_state,
@@ -883,9 +866,7 @@ impl ControlUnit {
         signals.pc_write = true;
         signals.addr_sel = MemAddrSel::TrapVectorAddr;
         signals.pc_sel = PcSel::TrapVector;
-        let next_state = self
-            .next_state_logic
-            .next_state(current, false, false, false, false);
+        let next_state = self.next_state_logic.next_state(current, false, false, false, false);
         let mut internal = ControlInternalSignals::fetch(current, next_state);
         internal.irq_req = true;
         Ok(ControlStep { signals, internal })

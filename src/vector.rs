@@ -1,15 +1,8 @@
-use crate::control::VecWbSel;
 use crate::isa::{VReg, VectorRKind};
 
 pub const VECTOR_REG_COUNT: usize = 8;
 pub const VECTOR_LANES: usize = 4;
 pub const VECTOR_LANE_BYTES: u32 = 4;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum VectorMemoryOp {
-    Load { vd: VReg },
-    Store { vs: VReg },
-}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VectorRegisterFile {
@@ -64,6 +57,37 @@ impl VectorRegisterFile {
         }
         self.regs[reg.bits() as usize][lane] = value;
         Ok(Some((reg, lane, value)))
+    }
+
+    pub fn write_full_from_alu(
+        &mut self,
+        reg: VReg,
+        value: [u32; VECTOR_LANES],
+        enable: bool,
+    ) -> Option<(VReg, [u32; VECTOR_LANES])> {
+        self.write(reg, value, enable)
+    }
+
+    pub fn write_lane_from_memory(
+        &mut self,
+        reg: VReg,
+        lane: usize,
+        value: u32,
+        enable: bool,
+    ) -> Result<Option<(VReg, usize, u32)>, String> {
+        self.write_lane(reg, lane, value, enable)
+    }
+
+    pub fn read_lane_to_memory(
+        &self,
+        reg: VReg,
+        lane: usize,
+        enable: bool,
+    ) -> Result<Option<u32>, String> {
+        if !enable {
+            return Ok(None);
+        }
+        Ok(Some(self.read_lane(reg, lane)?))
     }
 
     pub fn snapshot(&self) -> [[u32; VECTOR_LANES]; VECTOR_REG_COUNT] {
@@ -123,41 +147,11 @@ impl LaneCounterRegister {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct VectorMemOpRegister {
-    value: Option<VectorMemoryOp>,
-}
-
-impl VectorMemOpRegister {
-    pub fn read(self) -> Option<VectorMemoryOp> {
-        self.value
-    }
-
-    pub fn write(&mut self, value: VectorMemoryOp, enable: bool) -> Option<VectorMemoryOp> {
-        if enable {
-            self.value = Some(value);
-            self.value
-        } else {
-            None
-        }
-    }
-
-    pub fn clear(&mut self, enable: bool) -> bool {
-        if enable {
-            self.value = None;
-            true
-        } else {
-            false
-        }
-    }
-}
-
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct VectorState {
     pub register_file: VectorRegisterFile,
     pub base_register: VectorBaseRegister,
     pub lane_counter: LaneCounterRegister,
-    pub mem_op_register: VectorMemOpRegister,
 }
 
 impl VectorState {
@@ -191,34 +185,6 @@ impl LaneComparator {
     pub fn eval(self, lane: usize) -> bool {
         lane + 1 >= VECTOR_LANES
     }
-}
-
-#[derive(Debug, Clone, Copy, Default)]
-pub struct VectorWriteBackMux;
-
-impl VectorWriteBackMux {
-    pub fn select(
-        self,
-        sel: VecWbSel,
-        mem_lane: Option<u32>,
-        alu_result: Option<[u32; VECTOR_LANES]>,
-    ) -> Result<VectorWriteBackValue, String> {
-        match sel {
-            VecWbSel::None => Err("VectorWriteBackMUX selected None".to_string()),
-            VecWbSel::MemLane => mem_lane.map(VectorWriteBackValue::Lane).ok_or_else(|| {
-                "VectorWriteBackMUX selected MemLane but mem_out is missing".to_string()
-            }),
-            VecWbSel::Alu => alu_result.map(VectorWriteBackValue::Full).ok_or_else(|| {
-                "VectorWriteBackMUX selected Alu but VectorALU result is missing".to_string()
-            }),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum VectorWriteBackValue {
-    Lane(u32),
-    Full([u32; VECTOR_LANES]),
 }
 
 #[derive(Debug, Clone, Copy, Default)]

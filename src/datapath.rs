@@ -2,10 +2,7 @@ use crate::asm::Expr;
 use crate::control::{self, ControlSignals, DecodedInstruction, MemAddrSel, OpASel, OpBSel, WbSel};
 use crate::isa::{AluRKind, Instruction, Reg};
 use crate::machine::Machine;
-use crate::vector::{
-    LaneComparator, LaneOffsetShifter, VectorAlu, VectorLaneAddressAdder, VectorMemoryOp,
-    VectorWriteBackMux, VectorWriteBackValue,
-};
+use crate::vector::{LaneComparator, LaneOffsetShifter, VectorAlu, VectorLaneAddressAdder};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct BranchCompareFlags {
@@ -332,7 +329,6 @@ pub struct Datapath {
     pub vector_lane_offset_shifter: LaneOffsetShifter,
     pub vector_lane_addr_adder: VectorLaneAddressAdder,
     pub lane_comparator: LaneComparator,
-    pub vector_wb_mux: VectorWriteBackMux,
 
     pub trap_vector_addr_gen: TrapVectorAddressGenerator,
     pub mem_addr_mux: MemAddrMux,
@@ -459,13 +455,8 @@ impl Datapath {
                     .lane_counter
                     .reset(sig.lane_counter_reset)
                     .ok_or_else(|| "vld setup needs lane_counter_reset=1".to_string())?;
-                machine
-                    .vector
-                    .mem_op_register
-                    .write(VectorMemoryOp::Load { vd: *vd }, sig.vector_mem_op_write)
-                    .ok_or_else(|| "vld setup needs vector_mem_op_write=1".to_string())?;
                 note_parts.push(format!(
-                    "VectorBaseRegister <- ALU_out=0x{base:08x}; LaneCounterRegister <- 0; VectorMemOpRegister <- Load({vd})"
+                    "VectorBaseRegister <- ALU_out=0x{base:08x}; LaneCounterRegister <- 0; IR keeps active instruction vld {vd}"
                 ));
             }
             Instruction::Vst { vs, .. } if sig.start_vec_op => {
@@ -481,32 +472,21 @@ impl Datapath {
                     .lane_counter
                     .reset(sig.lane_counter_reset)
                     .ok_or_else(|| "vst setup needs lane_counter_reset=1".to_string())?;
-                machine
-                    .vector
-                    .mem_op_register
-                    .write(VectorMemoryOp::Store { vs: *vs }, sig.vector_mem_op_write)
-                    .ok_or_else(|| "vst setup needs vector_mem_op_write=1".to_string())?;
                 note_parts.push(format!(
-                    "VectorBaseRegister <- ALU_out=0x{base:08x}; LaneCounterRegister <- 0; VectorMemOpRegister <- Store({vs})"
+                    "VectorBaseRegister <- ALU_out=0x{base:08x}; LaneCounterRegister <- 0; IR keeps active instruction vst {vs}"
                 ));
             }
-            Instruction::VectorR { op, vd, vs1, vs2 } if sig.vector_reg_write => {
+            Instruction::VectorR { op, vd, vs1, vs2 } if sig.vector_full_write => {
                 let lhs = machine.vector.register_file.read(*vs1);
                 let rhs = machine.vector.register_file.read(*vs2);
-                let alu_result = self.vector_alu.execute(*op, lhs, rhs)?;
-                let wb_value =
-                    self.vector_wb_mux
-                        .select(sig.vector_wb_sel, None, Some(alu_result))?;
-                let VectorWriteBackValue::Full(result) = wb_value else {
-                    return Err("VectorR expected full-vector writeback value".to_string());
-                };
+                let result = self.vector_alu.execute(*op, lhs, rhs)?;
                 machine
                     .vector
                     .register_file
-                    .write(*vd, result, sig.vector_reg_write)
-                    .ok_or_else(|| "VectorR needs vector_reg_write=1".to_string())?;
+                    .write_full_from_alu(*vd, result, sig.vector_full_write)
+                    .ok_or_else(|| "VectorR needs vector_full_write=1".to_string())?;
                 note_parts.push(format!(
-                    "VectorRegisterFile.{vs1}={lhs:?}; VectorRegisterFile.{vs2}={rhs:?}; VectorALU({op:?})={result:?}; VectorWriteBackMUX(Alu) -> VectorRegisterFile.{vd}"
+                    "VectorRegisterFile.{vs1}={lhs:?}; VectorRegisterFile.{vs2}={rhs:?}; VectorALU({op:?})=vec_res={result:?}; vec_full_wr -> VectorRegisterFile.{vd}"
                 ));
             }
             _ => {}
@@ -591,10 +571,6 @@ impl Datapath {
     ) -> Result<String, String> {
         let mut note_parts = vec![format!("signals: {}", sig.signal_summary())];
 
-        let active = machine.vector.mem_op_register.read().ok_or_else(|| {
-            "VEC_OP has no active vector memory operation in VectorMemOpRegister".to_string()
-        })?;
-
         let lane = machine.vector.lane_counter.read();
         let base = machine.vector.base_register.read();
         let lane_done_before = self.lane_comparator.eval(lane);
@@ -608,10 +584,8 @@ impl Datapath {
             "VectorBaseRegister=0x{base:08x}; LaneCounterRegister={lane}; LaneOffsetShifter(lane<<2)=0x{lane_offset:08x}; VectorLaneAddressAdder=0x{lane_addr:08x}; MemAddrMUX(VectorLaneAddr)=0x{mem_addr:08x}"
         ));
 
-        match (inst, active) {
-            (Instruction::Vld { vd, .. }, VectorMemoryOp::Load { vd: active_vd })
-                if *vd == active_vd =>
-            {
+        match inst {
+            Instruction::Vld { vd, .. } => {
                 if !sig.mem_read || !sig.vector_lane_write {
                     return Err("vld VEC_OP needs mem_read=1 and vector_lane_write=1".to_string());
                 }
@@ -621,31 +595,26 @@ impl Datapath {
                     .read_word(machine, mem_addr, true)?
                     .expect("enabled memory read returns data");
 
-                let wb_value =
-                    self.vector_wb_mux
-                        .select(sig.vector_wb_sel, Some(mem_lane), None)?;
-                let VectorWriteBackValue::Lane(value) = wb_value else {
-                    return Err("vld expected lane writeback value".to_string());
-                };
-
                 machine
                     .vector
                     .register_file
-                    .write_lane(*vd, lane, value, sig.vector_lane_write)?
+                    .write_lane_from_memory(*vd, lane, mem_lane, sig.vector_lane_write)?
                     .ok_or_else(|| "vld needs vector_lane_write=1".to_string())?;
 
                 note_parts.push(format!(
-                    "Memory[0x{mem_addr:08x}] -> mem_out=0x{value:08x}; VectorWriteBackMUX(MemLane) -> VectorRegisterFile.{vd}[{lane}]"
+                    "Memory[0x{mem_addr:08x}] -> mem_out=0x{mem_lane:08x}; vec_lane_wr -> VectorRegisterFile.{vd}[{lane}]"
                 ));
             }
-            (Instruction::Vst { vs, .. }, VectorMemoryOp::Store { vs: active_vs })
-                if *vs == active_vs =>
-            {
-                if !sig.mem_write {
-                    return Err("vst VEC_OP needs mem_write=1".to_string());
+            Instruction::Vst { vs, .. } => {
+                if !sig.mem_write || !sig.vector_lane_read {
+                    return Err("vst VEC_OP needs mem_write=1 and vector_lane_read=1".to_string());
                 }
 
-                let vec_lane = machine.vector.register_file.read_lane(*vs, lane)?;
+                let vec_lane = machine
+                    .vector
+                    .register_file
+                    .read_lane_to_memory(*vs, lane, sig.vector_lane_read)?
+                    .ok_or_else(|| "vst needs vector_lane_read=1".to_string())?;
                 let value =
                     self.mem_write_data_mux
                         .select(sig.mem_write_data_sel, 0, Some(vec_lane))?;
@@ -653,14 +622,13 @@ impl Datapath {
                 self.memory.write_word(machine, mem_addr, value, true)?;
                 machine.refresh_interrupt_lines();
                 note_parts.push(format!(
-                    "VectorRegisterFile.{vs}[{lane}]=0x{vec_lane:08x}; MemWriteDataMUX(VecLane)=0x{value:08x}; Memory[0x{mem_addr:08x}] <- 0x{value:08x}"
+                    "VectorRegisterFile.{vs}[{lane}]=0x{vec_lane:08x}; vec_lane_out -> MemWriteDataMUX(VecLane)=0x{value:08x}; Memory[0x{mem_addr:08x}] <- 0x{value:08x}"
                 ));
             }
-            _ => {
+            other => {
                 return Err(format!(
-                    "VEC_OP active operation {:?} does not match IR {}",
-                    active,
-                    inst.mnemonic()
+                    "VEC_OP phase expected vld/vst in IR, got {}",
+                    other.mnemonic()
                 ));
             }
         }
@@ -672,26 +640,22 @@ impl Datapath {
             .ok_or_else(|| "VEC_OP needs lane_counter_inc=1".to_string())?;
 
         if lane_done_before {
-            machine.vector.mem_op_register.clear(true);
+            let next_pc = self.pc_mux.select(sig, pc_old, 0, None, None)?;
+            self.pc
+                .write(machine, next_pc, sig.pc_write)
+                .ok_or_else(|| "last vector lane needs pc_wr=1".to_string())?;
+            note_parts.push(format!("PC_MUX({:?}) -> PC <- 0x{next_pc:08x}", sig.pc_sel));
         }
 
         note_parts.push(format!(
             "LaneComparator(lane_done={}); LaneCounterRegister {}",
             bit(lane_done_before),
             if lane_done_before {
-                "finished -> 0; VectorMemOpRegister <- None".to_string()
+                "finished -> 0".to_string()
             } else {
                 format!("<- {next_lane}")
             }
         ));
-
-        if sig.pc_write {
-            let next_pc = self.pc_plus4_adder.eval(pc_old);
-            self.pc
-                .write(machine, next_pc, true)
-                .ok_or_else(|| "finished VEC_OP needs pc_wr=1".to_string())?;
-            note_parts.push(format!("PC_MUX(PcPlus4) -> PC <- 0x{next_pc:08x}"));
-        }
 
         Ok(note_parts.join("; "))
     }
