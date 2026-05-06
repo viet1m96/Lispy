@@ -594,10 +594,7 @@ impl ControlInternalSignals {
             .map(|d| {
                 format!(
                     "instr_class={:?} imm_sel={:?} branch_kind={:?} vector_op={:?}",
-                    d.instr_class,
-                    d.imm_sel,
-                    d.branch_kind,
-                    d.vector_op,
+                    d.instr_class, d.imm_sel, d.branch_kind, d.vector_op,
                 )
             })
             .unwrap_or_else(|| {
@@ -618,7 +615,10 @@ impl ControlInternalSignals {
             })
             .unwrap_or_else(|| "BranchDecision(None)".to_string());
 
-        let lane = self.lane_done_in.map(|done| format!(" LaneComparator(lane_done={})", bit(done))).unwrap_or_default();
+        let lane = self
+            .lane_done_in
+            .map(|done| format!(" LaneComparator(lane_done={})", bit(done)))
+            .unwrap_or_default();
 
         let irq = match (self.irq_pending_in, self.mie_in, self.in_trap_in) {
             (Some(pending), Some(mie), Some(in_trap)) => format!(
@@ -756,9 +756,9 @@ impl ControlUnit {
         }
 
         let signals = self.signal_generator.fetch_signals();
-        let next_state = self
-            .next_state_logic
-            .next_state(current, signals.halt_req, false, false, false);
+        let next_state =
+            self.next_state_logic
+                .next_state(current, signals.halt_req, false, false, false);
         let mut internal = ControlInternalSignals::fetch(current, next_state);
         internal.irq_req = false;
         Ok(ControlStep { signals, internal })
@@ -797,9 +797,13 @@ impl ControlUnit {
             .execute_signals(decoded, alu_op, branch_decision)?;
         let irq_req = self.interrupt_request_logic.eval(irq_input);
         let effective_irq = irq_req && !signals.halt_req && !signals.start_vec_op;
-        let next_state = self
-            .next_state_logic
-            .next_state(current, signals.halt_req, effective_irq, signals.start_vec_op, false);
+        let next_state = self.next_state_logic.next_state(
+            current,
+            signals.halt_req,
+            effective_irq,
+            signals.start_vec_op,
+            false,
+        );
         let internal = ControlInternalSignals::execute(
             current,
             next_state,
@@ -866,7 +870,9 @@ impl ControlUnit {
         signals.pc_write = true;
         signals.addr_sel = MemAddrSel::TrapVectorAddr;
         signals.pc_sel = PcSel::TrapVector;
-        let next_state = self.next_state_logic.next_state(current, false, false, false, false);
+        let next_state = self
+            .next_state_logic
+            .next_state(current, false, false, false, false);
         let mut internal = ControlInternalSignals::fetch(current, next_state);
         internal.irq_req = true;
         Ok(ControlStep { signals, internal })
