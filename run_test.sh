@@ -50,6 +50,8 @@ run_case "examples/07_selection_sort_a_string"      "07_sort_static_words_as_cha
 run_case "examples/08_prob1"                        "08_prob1.lisp"                      "prob1"
 run_case "examples/09_hello_user_name"              "09_hello_user_name.lisp"            "09" "input.txt"
 run_case "examples/10_print_input_string"           "10_print_input_string.lisp"         "10" "input.txt"
+run_case "examples/12_custom_handler"               "12_custom_handler.lisp"             "12" "input.txt"
 run_case "examples/11_vector_operations_on_array"   "11_vector_op.lisp"                  "11"
+
 
 echo "All tests finished."
