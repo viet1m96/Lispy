@@ -93,9 +93,6 @@ pub struct DecodedInstruction {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ControlSignals {
-    pub phase: Phase,
-    pub instr_class: Option<InstrClass>,
-
     pub pc_write: bool,
     pub ir_write: bool,
     pub reg_write: bool,
@@ -122,16 +119,13 @@ pub struct ControlSignals {
 
     pub alu_op: Option<AluRKind>,
     pub vector_alu_op: Option<VectorRKind>,
-    pub branch_kind: Option<BranchKind>,
     pub branch_flags: Option<BranchCompareFlags>,
     pub take_branch: Option<bool>,
 }
 
 impl ControlSignals {
-    pub fn inactive(phase: Phase) -> Self {
+    pub fn inactive() -> Self {
         Self {
-            phase,
-            instr_class: None,
             pc_write: false,
             ir_write: false,
             reg_write: false,
@@ -156,7 +150,6 @@ impl ControlSignals {
             mem_write_data_sel: MemWriteDataSel::Rs2,
             alu_op: None,
             vector_alu_op: None,
-            branch_kind: None,
             branch_flags: None,
             take_branch: None,
         }
@@ -325,7 +318,6 @@ impl AluDecoder {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BranchDecisionOutput {
-    pub kind: BranchKind,
     pub flags: BranchCompareFlags,
     pub taken: bool,
 }
@@ -341,7 +333,7 @@ impl BranchDecision {
             BranchKind::Blt => flags.lt,
             BranchKind::Bge => flags.eq || flags.gt,
         };
-        BranchDecisionOutput { kind, flags, taken }
+        BranchDecisionOutput { flags, taken }
     }
 }
 
@@ -350,7 +342,7 @@ pub struct ControlSignalGenerator;
 
 impl ControlSignalGenerator {
     pub fn fetch_signals(self) -> ControlSignals {
-        let mut sig = ControlSignals::inactive(Phase::Fetch);
+        let mut sig = ControlSignals::inactive();
         sig.ir_write = true;
         sig.mem_read = true;
         sig.addr_sel = MemAddrSel::Pc;
@@ -364,11 +356,9 @@ impl ControlSignalGenerator {
         alu_op: Option<AluRKind>,
         branch_decision: Option<BranchDecisionOutput>,
     ) -> Result<ControlSignals, String> {
-        let mut sig = ControlSignals::inactive(Phase::Execute);
-        sig.instr_class = Some(decoded.instr_class);
+        let mut sig = ControlSignals::inactive();
         sig.imm_sel = decoded.imm_sel;
         sig.alu_op = alu_op;
-        sig.branch_kind = decoded.branch_kind;
         sig.pc_write = true;
 
         match decoded.instr_class {
@@ -471,8 +461,7 @@ impl ControlSignalGenerator {
         decoded: DecodedInstruction,
         lane_done: bool,
     ) -> Result<ControlSignals, String> {
-        let mut sig = ControlSignals::inactive(Phase::VecOp);
-        sig.instr_class = Some(decoded.instr_class);
+        let mut sig = ControlSignals::inactive();
         sig.addr_sel = MemAddrSel::VectorLaneAddr;
         sig.pc_sel = PcSel::PcPlus4;
         sig.pc_write = lane_done;
@@ -605,8 +594,7 @@ impl ControlInternalSignals {
             .branch_decision
             .map(|decision| {
                 format!(
-                    "BranchDecision(kind={:?}, eq={}, lt={}, gt={}, take_branch={})",
-                    decision.kind,
+                    "BranchDecision(eq={}, lt={}, gt={}, take_branch={})",
                     bit(decision.flags.eq),
                     bit(decision.flags.lt),
                     bit(decision.flags.gt),
@@ -864,7 +852,7 @@ impl ControlUnit {
             ));
         }
 
-        let mut signals = ControlSignals::inactive(Phase::TrapEnter);
+        let mut signals = ControlSignals::inactive();
         signals.trap_enter = true;
         signals.mem_read = true;
         signals.pc_write = true;

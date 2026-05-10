@@ -1,10 +1,8 @@
 use crate::asm::{AsmProgram, AsmSection, DataItem, Expr};
-use crate::image::DEFAULT_MEMORY_LAYOUT;
 use crate::isa::{AluRKind, BranchKind, Instruction, Reg};
 
 pub const PRINT_INT_LABEL: &str = "__rt_print_int";
 pub const PRINT_PSTR_LABEL: &str = "__rt_print_pstr";
-pub const PRINT_VALUE_LABEL: &str = "__rt_print_value";
 pub const READ_LINE_LABEL: &str = "__rt_read_line";
 pub const READ_CHAR_LABEL: &str = "__rt_read_char";
 pub const DEFAULT_INPUT_HANDLER_LABEL: &str = "__default_input_handler";
@@ -31,22 +29,15 @@ pub fn emit_runtime(
     program: &mut AsmProgram,
     needs_print_int: bool,
     needs_print_pstr: bool,
-    needs_print_value: bool,
     needs_read_line: bool,
     needs_read_char: bool,
     needs_default_input_handler: bool,
 ) {
-    let needs_print_int = needs_print_int || needs_print_value;
-    let needs_print_pstr = needs_print_pstr || needs_print_value;
-
     if needs_print_int {
         emit_print_int(program);
     }
     if needs_print_pstr {
         emit_print_pstr(program);
-    }
-    if needs_print_value {
-        emit_print_value(program);
     }
     if needs_read_line {
         emit_read_line(program);
@@ -409,71 +400,6 @@ fn emit_print_pstr(program: &mut AsmProgram) {
             rd: Reg::Zero,
             rs1: Reg::Ra,
             off: Expr::from_i32(0),
-        },
-    );
-}
-
-fn emit_print_value(program: &mut AsmProgram) {
-    program.label(AsmSection::Text, PRINT_VALUE_LABEL);
-
-    let label_int = "__rt_print_value_int";
-
-    load_small(program, Reg::T0, 3);
-    program.emit_inst(
-        AsmSection::Text,
-        Instruction::AluR {
-            op: AluRKind::And,
-            rd: Reg::T1,
-            rs1: Reg::A0,
-            rs2: Reg::T0,
-        },
-    );
-    program.emit_inst(
-        AsmSection::Text,
-        Instruction::Branch {
-            op: BranchKind::Bne,
-            rs1: Reg::T1,
-            rs2: Reg::Zero,
-            off: Expr::pcrel(label_int),
-        },
-    );
-
-    load_u32(program, Reg::T0, DEFAULT_MEMORY_LAYOUT.data_base as i32);
-    program.emit_inst(
-        AsmSection::Text,
-        Instruction::Branch {
-            op: BranchKind::Blt,
-            rs1: Reg::A0,
-            rs2: Reg::T0,
-            off: Expr::pcrel(label_int),
-        },
-    );
-
-    load_u32(program, Reg::T0, DEFAULT_MEMORY_LAYOUT.mmio_base as i32);
-    program.emit_inst(
-        AsmSection::Text,
-        Instruction::Branch {
-            op: BranchKind::Bge,
-            rs1: Reg::A0,
-            rs2: Reg::T0,
-            off: Expr::pcrel(label_int),
-        },
-    );
-
-    program.emit_inst(
-        AsmSection::Text,
-        Instruction::Jal {
-            rd: Reg::Zero,
-            off: Expr::pcrel(PRINT_PSTR_LABEL),
-        },
-    );
-
-    program.label(AsmSection::Text, label_int);
-    program.emit_inst(
-        AsmSection::Text,
-        Instruction::Jal {
-            rd: Reg::Zero,
-            off: Expr::pcrel(PRINT_INT_LABEL),
         },
     );
 }

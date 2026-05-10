@@ -176,27 +176,17 @@ impl TypeChecker {
             env.insert(param.name.clone(), *ty)?;
         }
 
-        let expected_return = sig.ret;
-
         let mut last_ty = Type::Nil;
-        for (index, expr) in defun.body.iter().enumerate() {
-            let is_last = index + 1 == defun.body.len();
-            last_ty = self.infer_expr(
-                expr,
-                &mut env,
-                if is_last { Some(expected_return) } else { None },
-            )?;
+        for expr in &defun.body {
+            last_ty = self.expr_type(expr, &mut env)?;
         }
 
-        if !compatible_exact_or_literal_context(last_ty, expected_return) {
-            return Err(format!(
-                "return type mismatch in function '{}': expected {}, got {}",
-                defun.name,
-                expected_return.name(),
-                last_ty.name()
-            ));
-        }
-        Ok(expected_return)
+        self.require_assignable(
+            last_ty,
+            sig.ret,
+            &format!("return type of '{}'", defun.name),
+        )?;
+        Ok(sig.ret)
     }
 
     fn check_top_level(&mut self, program: &Program) -> Result<(), String> {
@@ -207,29 +197,19 @@ impl TypeChecker {
 
         for form in &program.forms {
             if let TopForm::Expr(expr) = form {
-                self.infer_expr(expr, &mut env, None)?;
+                self.expr_type(expr, &mut env)?;
             }
         }
         Ok(())
     }
 
-    fn infer_expr(
-        &mut self,
-        expr: &Expr,
-        env: &mut TypeEnv,
-        expected: Option<Type>,
-    ) -> Result<Type, String> {
+    fn expr_type(&mut self, expr: &Expr, env: &mut TypeEnv) -> Result<Type, String> {
         match expr {
-            Expr::Number(value) => {
-                let ty = expected.filter(|ty| ty.is_numeric()).unwrap_or_else(|| {
-                    if i32::try_from(*value).is_ok() {
-                        Type::Int
-                    } else {
-                        Type::I64
-                    }
-                });
-                Ok(ty)
-            }
+            Expr::Number(value) => Ok(if i32::try_from(*value).is_ok() {
+                Type::Int
+            } else {
+                Type::I64
+            }),
             Expr::Cast { target_type, value } => {
                 let target = Type::from_ann(*target_type);
                 self.ensure_cast_allowed(value, env, target)?;
@@ -252,47 +232,16 @@ impl TypeChecker {
                 then_branch,
                 else_branch,
             } => {
-                let cond_ty = self.infer_expr(cond, env, Some(Type::Bool))?;
-                if !cond_ty.is_truthy_compatible() {
-                    return Err(format!(
-                        "if condition must be truthy-compatible, got {}",
-                        cond_ty.name()
-                    ));
-                }
-
-                if let Some(expected_ty) = expected {
-                    let then_ty = self.infer_expr(then_branch, env, Some(expected_ty))?;
-                    let else_ty = self.infer_expr(else_branch, env, Some(expected_ty))?;
-                    self.require_type(then_branch, then_ty, expected_ty, "then branch")?;
-                    self.require_type(else_branch, else_ty, expected_ty, "else branch")?;
-                    Ok(expected_ty)
-                } else {
-                    let then_ty = self.infer_expr(then_branch, env, None)?;
-                    let else_ty = self.infer_expr(else_branch, env, None)?;
-                    if then_ty == else_ty {
-                        Ok(then_ty)
-                    } else if is_numeric_literal(then_branch) && else_ty.is_numeric() {
-                        let coerced = self.infer_expr(then_branch, env, Some(else_ty))?;
-                        self.require_type(then_branch, coerced, else_ty, "then branch")?;
-                        Ok(else_ty)
-                    } else if is_numeric_literal(else_branch) && then_ty.is_numeric() {
-                        let coerced = self.infer_expr(else_branch, env, Some(then_ty))?;
-                        self.require_type(else_branch, coerced, then_ty, "else branch")?;
-                        Ok(then_ty)
-                    } else {
-                        Err(format!(
-                            "type mismatch in if branches: then has {}, else has {}",
-                            then_ty.name(),
-                            else_ty.name()
-                        ))
-                    }
-                }
+                let cond_ty = self.expr_type(cond, env)?;
+                self.require_truthy(cond_ty, "if condition")?;
+                let then_ty = self.expr_type(then_branch, env)?;
+                let else_ty = self.expr_type(else_branch, env)?;
+                merge_branch_types(then_ty, else_ty)
             }
             Expr::Begin(items) => {
                 let mut last = Type::Nil;
-                for (index, item) in items.iter().enumerate() {
-                    let is_last = index + 1 == items.len();
-                    last = self.infer_expr(item, env, if is_last { expected } else { None })?;
+                for item in items {
+                    last = self.expr_type(item, env)?;
                 }
                 Ok(last)
             }
@@ -301,11 +250,9 @@ impl TypeChecker {
                 for binding in bindings {
                     self.check_binding(binding, env)?;
                 }
-
                 let mut last = Type::Nil;
-                for (index, expr) in body.iter().enumerate() {
-                    let is_last = index + 1 == body.len();
-                    last = self.infer_expr(expr, env, if is_last { expected } else { None })?;
+                for expr in body {
+                    last = self.expr_type(expr, env)?;
                 }
                 env.pop_scope();
                 Ok(last)
@@ -315,29 +262,24 @@ impl TypeChecker {
                 body,
                 finally,
             } => {
-                let cond_ty = self.infer_expr(cond, env, Some(Type::Bool))?;
-                if !cond_ty.is_truthy_compatible() {
-                    return Err(format!(
-                        "loop condition must be truthy-compatible, got {}",
-                        cond_ty.name()
-                    ));
-                }
+                let cond_ty = self.expr_type(cond, env)?;
+                self.require_truthy(cond_ty, "loop condition")?;
                 for expr in body {
-                    self.infer_expr(expr, env, None)?;
+                    self.expr_type(expr, env)?;
                 }
-                self.infer_expr(finally, env, expected)
+                self.expr_type(finally, env)
             }
-            Expr::Print(value) => self.infer_expr(value, env, expected),
+            Expr::Print(value) => self.expr_type(value, env),
             Expr::PrintStr(value) => {
-                let ty = self.infer_expr(value, env, Some(Type::String))?;
-                self.require_type(value, ty, Type::String, "print-str argument")?;
+                let ty = self.expr_type(value, env)?;
+                self.require_assignable(ty, Type::String, "print-str argument")?;
                 Ok(Type::String)
             }
             Expr::ReadChar => Ok(Type::Int),
             Expr::ReadLine => Ok(Type::String),
             Expr::ReadInputData | Expr::HandlerDone => Ok(Type::Int),
             Expr::Halt => Ok(Type::Nil),
-            Expr::Call { callee, args } => self.infer_call(callee, args, env, expected),
+            Expr::Call { callee, args } => self.call_type(callee, args, env),
         }
     }
 
@@ -350,8 +292,7 @@ impl TypeChecker {
     ) -> Result<Type, String> {
         let declared = Type::from_ann(type_ann);
 
-        let existing = env.lookup(name).or_else(|| self.globals.get(name).copied());
-        if let Some(existing) = existing {
+        if let Some(existing) = env.lookup(name).or_else(|| self.globals.get(name).copied()) {
             if existing != declared {
                 return Err(format!(
                     "type mismatch for '{}': existing type is {}, but setq declares {}",
@@ -362,8 +303,8 @@ impl TypeChecker {
             }
         }
 
-        let value_ty = self.infer_expr(value, env, Some(declared))?;
-        self.require_type(value, value_ty, declared, "setq")?;
+        let actual = self.expr_type(value, env)?;
+        self.require_assignable(actual, declared, "setq")?;
 
         if env.lookup(name).is_none() && !self.globals.contains_key(name) {
             self.globals.insert(name.to_string(), declared);
@@ -374,18 +315,17 @@ impl TypeChecker {
 
     fn check_binding(&mut self, binding: &Binding, env: &mut TypeEnv) -> Result<Type, String> {
         let declared = Type::from_ann(binding.type_ann);
-        let value_ty = self.infer_expr(&binding.value, env, Some(declared))?;
-        self.require_type(&binding.value, value_ty, declared, "let binding")?;
+        let actual = self.expr_type(&binding.value, env)?;
+        self.require_assignable(actual, declared, "let binding")?;
         env.insert(binding.name.clone(), declared)?;
         Ok(declared)
     }
 
-    fn infer_call(
+    fn call_type(
         &mut self,
         callee: &Callee,
         args: &[Expr],
         env: &mut TypeEnv,
-        expected: Option<Type>,
     ) -> Result<Type, String> {
         match callee {
             Callee::Ident(name) => {
@@ -405,56 +345,45 @@ impl TypeChecker {
                 }
 
                 for (index, (arg, expected_ty)) in args.iter().zip(sig.params.iter()).enumerate() {
-                    let actual = self.infer_expr(arg, env, Some(*expected_ty))?;
-                    self.require_type(
-                        arg,
+                    let actual = self.expr_type(arg, env)?;
+                    self.require_assignable(
                         actual,
                         *expected_ty,
                         &format!("argument {} of function '{}'", index + 1, name),
                     )?;
                 }
 
-                if let Some(expected_ty) = expected {
-                    self.require_named(sig.ret, expected_ty, &format!("call to '{}'", name))?;
-                }
                 Ok(sig.ret)
             }
-            Callee::Builtin(name) => self.infer_builtin(name, args, env, expected),
+            Callee::Builtin(name) => self.builtin_type(name, args, env),
         }
     }
 
-    fn infer_builtin(
+    fn builtin_type(
         &mut self,
         name: &str,
         args: &[Expr],
         env: &mut TypeEnv,
-        expected: Option<Type>,
     ) -> Result<Type, String> {
         match name {
             "+" | "-" | "*" | "/" | "%" | "bit-and" | "bit-or" | "bit-xor" => {
-                self.numeric_operands(name, args, env, expected)
+                self.numeric_operands(name, args, env)
             }
             "shl" | "shr" | "sar" => {
                 if args.len() != 2 {
                     return Err(format!("builtin '{}' expects exactly 2 arguments", name));
                 }
-                let lhs_ty = self.numeric_operands(name, &args[0..1], env, expected)?;
-                let rhs_ty = self.infer_expr(&args[1], env, Some(Type::Int))?;
-                self.require_type(&args[1], rhs_ty, Type::Int, "shift amount")?;
+                let lhs_ty = self.numeric_operands(name, &args[0..1], env)?;
+                let rhs_ty = self.expr_type(&args[1], env)?;
+                self.require_assignable(rhs_ty, Type::Int, "shift amount")?;
                 Ok(lhs_ty)
             }
             "=" | "!=" => self.compare_operands(name, args, env, true),
             "<" | "<=" | ">" | ">=" => self.compare_operands(name, args, env, false),
             "and" | "or" => {
                 for arg in args {
-                    let ty = self.infer_expr(arg, env, Some(Type::Bool))?;
-                    if !ty.is_truthy_compatible() {
-                        return Err(format!(
-                            "builtin '{}' expects truthy-compatible arguments, got {}",
-                            name,
-                            ty.name()
-                        ));
-                    }
+                    let ty = self.expr_type(arg, env)?;
+                    self.require_truthy(ty, &format!("builtin '{}' argument", name))?;
                 }
                 Ok(Type::Bool)
             }
@@ -462,81 +391,46 @@ impl TypeChecker {
                 if args.len() != 1 {
                     return Err("not expects exactly 1 argument".to_string());
                 }
-                let ty = self.infer_expr(&args[0], env, Some(Type::Bool))?;
-                if !ty.is_truthy_compatible() {
-                    return Err(format!(
-                        "not expects truthy-compatible argument, got {}",
-                        ty.name()
-                    ));
-                }
+                let ty = self.expr_type(&args[0], env)?;
+                self.require_truthy(ty, "not argument")?;
                 Ok(Type::Bool)
-            }
-            "strlen" => {
-                if args.len() != 1 {
-                    return Err("strlen expects exactly 1 argument".to_string());
-                }
-                let ty = self.infer_expr(&args[0], env, Some(Type::String))?;
-                self.require_type(&args[0], ty, Type::String, "strlen argument")?;
-                Ok(Type::Int)
-            }
-            "strget" => {
-                if args.len() != 2 {
-                    return Err("strget expects exactly 2 arguments".to_string());
-                }
-                let s = self.infer_expr(&args[0], env, Some(Type::String))?;
-                let i = self.infer_expr(&args[1], env, Some(Type::Int))?;
-                self.require_type(&args[0], s, Type::String, "strget string")?;
-                self.require_type(&args[1], i, Type::Int, "strget index")?;
-                Ok(Type::Int)
-            }
-            "strset" => {
-                if args.len() != 3 {
-                    return Err("strset expects exactly 3 arguments".to_string());
-                }
-                let s = self.infer_expr(&args[0], env, Some(Type::String))?;
-                let i = self.infer_expr(&args[1], env, Some(Type::Int))?;
-                let ch = self.infer_expr(&args[2], env, Some(Type::Int))?;
-                self.require_type(&args[0], s, Type::String, "strset string")?;
-                self.require_type(&args[1], i, Type::Int, "strset index")?;
-                self.require_type(&args[2], ch, Type::Int, "strset value")?;
-                Ok(Type::Int)
             }
             "array" => {
                 if args.len() != 1 {
                     return Err("array expects exactly 1 size argument".to_string());
                 }
-                let size = self.infer_expr(&args[0], env, Some(Type::Int))?;
-                self.require_type(&args[0], size, Type::Int, "array size")?;
+                let size = self.expr_type(&args[0], env)?;
+                self.require_assignable(size, Type::Int, "array size")?;
                 Ok(Type::Array)
             }
             "array-get" => {
                 if args.len() != 2 {
                     return Err("array-get expects exactly 2 arguments".to_string());
                 }
-                let arr = self.infer_expr(&args[0], env, Some(Type::Array))?;
-                let index = self.infer_expr(&args[1], env, Some(Type::Int))?;
-                self.require_type(&args[0], arr, Type::Array, "array-get array")?;
-                self.require_type(&args[1], index, Type::Int, "array-get index")?;
+                let arr = self.expr_type(&args[0], env)?;
+                let index = self.expr_type(&args[1], env)?;
+                self.require_assignable(arr, Type::Array, "array-get array")?;
+                self.require_assignable(index, Type::Int, "array-get index")?;
                 Ok(Type::Int)
             }
             "array-set" => {
                 if args.len() != 3 {
                     return Err("array-set expects exactly 3 arguments".to_string());
                 }
-                let arr = self.infer_expr(&args[0], env, Some(Type::Array))?;
-                let index = self.infer_expr(&args[1], env, Some(Type::Int))?;
-                let value = self.infer_expr(&args[2], env, Some(Type::Int))?;
-                self.require_type(&args[0], arr, Type::Array, "array-set array")?;
-                self.require_type(&args[1], index, Type::Int, "array-set index")?;
-                self.require_type(&args[2], value, Type::Int, "array-set value")?;
+                let arr = self.expr_type(&args[0], env)?;
+                let index = self.expr_type(&args[1], env)?;
+                let value = self.expr_type(&args[2], env)?;
+                self.require_assignable(arr, Type::Array, "array-set array")?;
+                self.require_assignable(index, Type::Int, "array-set index")?;
+                self.require_assignable(value, Type::Int, "array-set value")?;
                 Ok(Type::Int)
             }
             "array-size" => {
                 if args.len() != 1 {
                     return Err("array-size expects exactly 1 argument".to_string());
                 }
-                let arr = self.infer_expr(&args[0], env, Some(Type::Array))?;
-                self.require_type(&args[0], arr, Type::Array, "array-size argument")?;
+                let arr = self.expr_type(&args[0], env)?;
+                self.require_assignable(arr, Type::Array, "array-size argument")?;
                 Ok(Type::Int)
             }
             "vadd" | "vsub" | "vmul" | "vdiv" | "vcmp" => {
@@ -546,23 +440,20 @@ impl TypeChecker {
                         name
                     ));
                 }
-                let dst = self.infer_expr(&args[0], env, Some(Type::Array))?;
-                let left = self.infer_expr(&args[1], env, Some(Type::Array))?;
-                let right = self.infer_expr(&args[2], env, Some(Type::Array))?;
-                self.require_type(
-                    &args[0],
+                let dst = self.expr_type(&args[0], env)?;
+                let left = self.expr_type(&args[1], env)?;
+                let right = self.expr_type(&args[2], env)?;
+                self.require_assignable(
                     dst,
                     Type::Array,
                     &format!("builtin '{}' destination array", name),
                 )?;
-                self.require_type(
-                    &args[1],
+                self.require_assignable(
                     left,
                     Type::Array,
                     &format!("builtin '{}' left array", name),
                 )?;
-                self.require_type(
-                    &args[2],
+                self.require_assignable(
                     right,
                     Type::Array,
                     &format!("builtin '{}' right array", name),
@@ -578,7 +469,6 @@ impl TypeChecker {
         name: &str,
         args: &[Expr],
         env: &mut TypeEnv,
-        expected: Option<Type>,
     ) -> Result<Type, String> {
         if args.is_empty() {
             return Err(format!("builtin '{}' expects at least 1 argument", name));
@@ -587,12 +477,9 @@ impl TypeChecker {
             return Err(format!("builtin '{}' expects exactly 2 arguments", name));
         }
 
-        let mut base = expected.filter(|ty| ty.is_numeric());
+        let mut result = Type::Int;
         for arg in args {
-            if is_numeric_literal(arg) {
-                continue;
-            }
-            let ty = self.infer_expr(arg, env, None)?;
+            let ty = self.expr_type(arg, env)?;
             if !ty.is_numeric() {
                 return Err(format!(
                     "builtin '{}' expects numeric arguments, got {}",
@@ -600,37 +487,24 @@ impl TypeChecker {
                     ty.name()
                 ));
             }
-            match base {
-                None => base = Some(ty),
-                Some(existing) if existing == ty => {}
-                Some(existing) => {
-                    return Err(format!(
-                        "type mismatch in '{}': expected operands of the same numeric type, got {} and {}",
-                        name,
-                        existing.name(),
-                        ty.name()
-                    ));
-                }
+            if ty == Type::I64 {
+                result = Type::I64;
             }
         }
 
-        let base = base.unwrap_or(Type::Int);
-        if base == Type::I64
+        if result == Type::I64
             && matches!(
                 name,
                 "/" | "%" | "bit-and" | "bit-or" | "bit-xor" | "shl" | "shr" | "sar"
             )
         {
             return Err(format!(
-                "dynamic :i64 builtin '{}' is allowed only when the expression can be folded at compile time; use :int operands for runtime evaluation",
+                "dynamic :i64 builtin '{}' is not supported; use :int operands for runtime evaluation",
                 name
             ));
         }
-        for arg in args {
-            let ty = self.infer_expr(arg, env, Some(base))?;
-            self.require_type(arg, ty, base, &format!("builtin '{}'", name))?;
-        }
-        Ok(base)
+
+        Ok(result)
     }
 
     fn compare_operands(
@@ -644,46 +518,32 @@ impl TypeChecker {
             return Err(format!("comparison '{}' expects exactly 2 arguments", name));
         }
 
-        let left = self.infer_expr(&args[0], env, None)?;
-        let base = if is_numeric_literal(&args[0]) {
-            let right_hint = self.infer_expr(&args[1], env, None)?;
-            if right_hint.is_numeric() {
-                right_hint
-            } else {
-                left
-            }
-        } else {
-            left
-        };
+        let left = self.expr_type(&args[0], env)?;
+        let right = self.expr_type(&args[1], env)?;
 
-        if base == Type::String {
-            if !allow_string {
-                return Err(format!(
-                    "comparison '{}' requires numeric operands; string operands are invalid",
-                    name
-                ));
+        if left == Type::String || right == Type::String {
+            if allow_string && left == Type::String && right == Type::String {
+                return Ok(Type::Bool);
             }
-            let right = self.infer_expr(&args[1], env, Some(Type::String))?;
-            self.require_type(
-                &args[1],
-                right,
-                Type::String,
-                &format!("comparison '{}'", name),
-            )?;
-            return Ok(Type::Bool);
-        }
-
-        if !base.is_numeric() && base != Type::Bool {
             return Err(format!(
-                "comparison '{}' expects numeric/bool operands, got {}",
-                name,
-                base.name()
+                "comparison '{}' requires numeric operands; string operands are invalid",
+                name
             ));
         }
 
-        let right = self.infer_expr(&args[1], env, Some(base))?;
-        self.require_type(&args[1], right, base, &format!("comparison '{}'", name))?;
-        Ok(Type::Bool)
+        if left.is_numeric() && right.is_numeric() {
+            return Ok(Type::Bool);
+        }
+        if left == Type::Bool && right == Type::Bool {
+            return Ok(Type::Bool);
+        }
+
+        Err(format!(
+            "comparison '{}' expects compatible operands, got {} and {}",
+            name,
+            left.name(),
+            right.name()
+        ))
     }
 
     fn ensure_cast_allowed(
@@ -692,14 +552,12 @@ impl TypeChecker {
         env: &mut TypeEnv,
         target: Type,
     ) -> Result<(), String> {
-        let source = self.infer_expr(value, env, None)?;
+        let source = self.expr_type(value, env)?;
         let ok = match target {
-            Type::Int => matches!(source, Type::Int | Type::I64 | Type::Bool | Type::Nil),
-            Type::I64 => matches!(source, Type::Int | Type::I64 | Type::Bool | Type::Nil),
-            Type::Bool => matches!(source, Type::Int | Type::I64 | Type::Bool | Type::Nil),
-            Type::String => source == Type::String,
-            Type::Array => source == Type::Array,
-            Type::Nil => source == Type::Nil,
+            Type::Int | Type::I64 => {
+                matches!(source, Type::Int | Type::I64 | Type::Bool | Type::Nil)
+            }
+            Type::Bool | Type::String | Type::Array | Type::Nil => false,
         };
         if ok {
             Ok(())
@@ -712,29 +570,13 @@ impl TypeChecker {
         }
     }
 
-    fn require_type(
+    fn require_assignable(
         &self,
-        expr: &Expr,
         actual: Type,
         expected: Type,
         context: &str,
     ) -> Result<(), String> {
-        if actual == expected {
-            return Ok(());
-        }
-
-        if is_numeric_literal(expr) && expected.is_numeric() && actual.is_numeric() {
-            return Ok(());
-        }
-        Err(format!(
-            "type mismatch in {context}: expected {}, got {}",
-            expected.name(),
-            actual.name()
-        ))
-    }
-
-    fn require_named(&self, actual: Type, expected: Type, context: &str) -> Result<(), String> {
-        if actual == expected {
+        if is_assignable(actual, expected) {
             Ok(())
         } else {
             Err(format!(
@@ -744,12 +586,37 @@ impl TypeChecker {
             ))
         }
     }
+
+    fn require_truthy(&self, ty: Type, context: &str) -> Result<(), String> {
+        if ty.is_truthy_compatible() {
+            Ok(())
+        } else {
+            Err(format!(
+                "{context} must be truthy-compatible, got {}",
+                ty.name()
+            ))
+        }
+    }
 }
 
-fn is_numeric_literal(expr: &Expr) -> bool {
-    matches!(expr, Expr::Number(_) | Expr::Bool(_) | Expr::Nil)
+fn is_assignable(actual: Type, expected: Type) -> bool {
+    actual == expected || (actual == Type::Int && expected == Type::I64)
 }
 
-fn compatible_exact_or_literal_context(actual: Type, expected: Type) -> bool {
-    actual == expected
+fn merge_branch_types(left: Type, right: Type) -> Result<Type, String> {
+    if left == right {
+        Ok(left)
+    } else if left.is_numeric() && right.is_numeric() {
+        Ok(if left == Type::I64 || right == Type::I64 {
+            Type::I64
+        } else {
+            Type::Int
+        })
+    } else {
+        Err(format!(
+            "type mismatch in if branches: then has {}, else has {}",
+            left.name(),
+            right.name()
+        ))
+    }
 }

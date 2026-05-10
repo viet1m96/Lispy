@@ -89,10 +89,6 @@ impl VectorRegisterFile {
         }
         Ok(Some(self.read_lane(reg, lane)?))
     }
-
-    pub fn snapshot(&self) -> [[u32; VECTOR_LANES]; VECTOR_REG_COUNT] {
-        self.regs
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]

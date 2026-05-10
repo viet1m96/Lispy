@@ -7,7 +7,6 @@ use crate::isa::{Instruction, INSTRUCTION_SIZE};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub enum AsmSection {
     Text,
-    Rodata,
     Data,
 }
 
@@ -15,7 +14,6 @@ impl AsmSection {
     pub fn name(self) -> &'static str {
         match self {
             Self::Text => ".text",
-            Self::Rodata => ".rodata",
             Self::Data => ".data",
         }
     }
@@ -23,7 +21,6 @@ impl AsmSection {
     pub fn base(self, layout: &MemoryLayout) -> u32 {
         match self {
             Self::Text => layout.text_base,
-            Self::Rodata => layout.rodata_base,
             Self::Data => layout.data_base,
         }
     }
@@ -54,15 +51,11 @@ impl Expr {
         Self::LabelLo12(name.to_string())
     }
 
-    pub fn resolved_i32_ref(&self) -> Option<i32> {
+    pub fn resolved_i32(&self) -> Option<i32> {
         match self {
             Self::Resolved(value) => Some(*value),
             _ => None,
         }
-    }
-
-    pub fn resolved_i32(&self) -> Option<i32> {
-        self.resolved_i32_ref()
     }
 }
 
@@ -133,7 +126,6 @@ impl AsmProgram {
     pub fn new() -> Self {
         let mut items = BTreeMap::new();
         items.insert(AsmSection::Text, Vec::new());
-        items.insert(AsmSection::Rodata, Vec::new());
         items.insert(AsmSection::Data, Vec::new());
         Self {
             layout: DEFAULT_MEMORY_LAYOUT,
@@ -174,7 +166,6 @@ impl AsmProgram {
             .ok_or_else(|| format!("missing entry label: {}", self.entry_label))?;
 
         let text = self.assemble_section(AsmSection::Text, &symbols)?;
-        let rodata = self.assemble_section(AsmSection::Rodata, &symbols)?;
         let data = self.assemble_section(AsmSection::Data, &symbols)?;
 
         Ok(AssembledProgram {
@@ -182,14 +173,13 @@ impl AsmProgram {
             entry,
             symbols,
             text,
-            rodata,
             data,
         })
     }
 
     fn build_symbol_table(&self) -> Result<BTreeMap<String, u32>, String> {
         let mut table = BTreeMap::new();
-        for section in [AsmSection::Text, AsmSection::Rodata, AsmSection::Data] {
+        for section in [AsmSection::Text, AsmSection::Data] {
             let items = self.items.get(&section).expect("known section");
             let mut cursor = section.base(&self.layout);
             for item in items {
@@ -270,7 +260,6 @@ pub struct AssembledProgram {
     pub entry: u32,
     pub symbols: BTreeMap<String, u32>,
     pub text: AssembledSection,
-    pub rodata: AssembledSection,
     pub data: AssembledSection,
 }
 
@@ -284,8 +273,6 @@ impl AssembledProgram {
         }
         out.push('\n');
         out.push_str(&self.text.render_listing());
-        out.push('\n');
-        out.push_str(&self.rodata.render_listing());
         out.push('\n');
         out.push_str(&self.data.render_listing());
         out

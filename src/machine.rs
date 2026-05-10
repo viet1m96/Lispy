@@ -3,7 +3,6 @@ use crate::datapath::RegisterFile;
 use crate::image::ProgramImage;
 use crate::input_device::InputDevice;
 use crate::interrupt::InterruptLines;
-use crate::isa::Reg;
 use crate::memory_state::MemoryState;
 use crate::trap::TrapState;
 use crate::vector::VectorState;
@@ -71,18 +70,6 @@ impl Machine {
 
     pub fn clock_control(&mut self, reset: bool, next_state: Phase) {
         self.control_state.clock(reset, next_state);
-    }
-
-    pub fn read_reg(&self, reg: Reg) -> u32 {
-        self.register_file.read(reg)
-    }
-
-    pub fn write_reg(&mut self, reg: Reg, value: u32) -> Option<(Reg, u32)> {
-        self.register_file.write(reg, value, true)
-    }
-
-    pub fn force_zero_reg(&mut self) {
-        self.register_file.force_zero();
     }
 
     pub fn set_halt(&mut self, reason: impl Into<String>) {

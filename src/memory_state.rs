@@ -58,7 +58,6 @@ impl MmioState {
 pub struct MemoryState {
     pub layout: MemoryLayout,
     text: Vec<u8>,
-    rodata: Vec<u8>,
     data_ram: Vec<u8>,
     pub mmio: MmioState,
 }
@@ -90,7 +89,6 @@ impl MemoryState {
         Ok(Self {
             layout: image.layout,
             text: image.text.clone(),
-            rodata: image.rodata.clone(),
             data_ram,
             mmio: MmioState::default(),
         })
@@ -114,9 +112,6 @@ impl MemoryState {
 
     pub fn load_u8(&self, address: u32) -> Result<u8, String> {
         if let Some(value) = read_from_region(address, self.layout.text_base, &self.text) {
-            return Ok(value);
-        }
-        if let Some(value) = read_from_region(address, self.layout.rodata_base, &self.rodata) {
             return Ok(value);
         }
         if let Some(value) = read_from_region(address, self.layout.data_base, &self.data_ram) {

@@ -7,8 +7,8 @@ output : "What is your name?\nHello, Alice!\n"
 lost_input : ""
 
 [trace:brief]
-T0000  phase=fetch      pc=0x00000004 ir=0x00020537  lui a0, 32
-T0001  phase=execute    pc=0x00000004 ir=0x00020537  lui a0, 32
+T0000  phase=fetch      pc=0x00000004 ir=0x00010537  lui a0, 16
+T0001  phase=execute    pc=0x00000004 ir=0x00010537  lui a0, 16
 T0002  phase=fetch      pc=0x00000008 ir=0x00050513  addi a0, a0, 0
 T0003  phase=execute    pc=0x00000008 ir=0x00050513  addi a0, a0, 0
 T0004  phase=fetch      pc=0x0000000c ir=0x040000ef  jal ra, 64
@@ -40,8 +40,8 @@ T0029  phase=fetch      pc=0x00000164 ir=0x00100f13  addi t5, x0, 1
 T0030  phase=execute    pc=0x00000164 ir=0x00100f13  addi t5, x0, 1
 T0031  phase=fetch      pc=0x00000168 ir=0x01efa823  sw t5, 16(t6)
 T0032  phase=execute    pc=0x00000168 ir=0x01efa823  sw t5, 16(t6)  [ack]
-T0033  phase=fetch      pc=0x0000016c ir=0x00020e37  lui t3, 32
-T0034  phase=execute    pc=0x0000016c ir=0x00020e37  lui t3, 32
+T0033  phase=fetch      pc=0x0000016c ir=0x00010e37  lui t3, 16
+T0034  phase=execute    pc=0x0000016c ir=0x00010e37  lui t3, 16
 T0035  phase=fetch      pc=0x00000170 ir=0x084e0e13  addi t3, t3, 132
 T0036  phase=execute    pc=0x00000170 ir=0x084e0e13  addi t3, t3, 132
 T0037  phase=fetch      pc=0x00000174 ir=0x000e2e83  lw t4, 0(t3)
@@ -135,8 +135,8 @@ T0124  phase=fetch      pc=0x00000164 ir=0x00100f13  addi t5, x0, 1
 T0125  phase=execute    pc=0x00000164 ir=0x00100f13  addi t5, x0, 1
 T0126  phase=fetch      pc=0x00000168 ir=0x01efa823  sw t5, 16(t6)
 T0127  phase=execute    pc=0x00000168 ir=0x01efa823  sw t5, 16(t6)  [ack]
-T0128  phase=fetch      pc=0x0000016c ir=0x00020e37  lui t3, 32
-T0129  phase=execute    pc=0x0000016c ir=0x00020e37  lui t3, 32
+T0128  phase=fetch      pc=0x0000016c ir=0x00010e37  lui t3, 16
+T0129  phase=execute    pc=0x0000016c ir=0x00010e37  lui t3, 16
 T0130  phase=fetch      pc=0x00000170 ir=0x084e0e13  addi t3, t3, 132
 T0131  phase=execute    pc=0x00000170 ir=0x084e0e13  addi t3, t3, 132
 T0132  phase=fetch      pc=0x00000174 ir=0x000e2e83  lw t4, 0(t3)
@@ -216,8 +216,8 @@ T0205  phase=fetch      pc=0x00000164 ir=0x00100f13  addi t5, x0, 1
 T0206  phase=execute    pc=0x00000164 ir=0x00100f13  addi t5, x0, 1
 T0207  phase=fetch      pc=0x00000168 ir=0x01efa823  sw t5, 16(t6)
 T0208  phase=execute    pc=0x00000168 ir=0x01efa823  sw t5, 16(t6)  [ack]
-T0209  phase=fetch      pc=0x0000016c ir=0x00020e37  lui t3, 32
-T0210  phase=execute    pc=0x0000016c ir=0x00020e37  lui t3, 32
+T0209  phase=fetch      pc=0x0000016c ir=0x00010e37  lui t3, 16
+T0210  phase=execute    pc=0x0000016c ir=0x00010e37  lui t3, 16
 T0211  phase=fetch      pc=0x00000170 ir=0x084e0e13  addi t3, t3, 132
 T0212  phase=execute    pc=0x00000170 ir=0x084e0e13  addi t3, t3, 132
 T0213  phase=fetch      pc=0x00000174 ir=0x000e2e83  lw t4, 0(t3)
@@ -325,8 +325,8 @@ T0314  phase=fetch      pc=0x00000164 ir=0x00100f13  addi t5, x0, 1
 T0315  phase=execute    pc=0x00000164 ir=0x00100f13  addi t5, x0, 1
 T0316  phase=fetch      pc=0x00000168 ir=0x01efa823  sw t5, 16(t6)
 T0317  phase=execute    pc=0x00000168 ir=0x01efa823  sw t5, 16(t6)  [ack]
-T0318  phase=fetch      pc=0x0000016c ir=0x00020e37  lui t3, 32
-T0319  phase=execute    pc=0x0000016c ir=0x00020e37  lui t3, 32
+T0318  phase=fetch      pc=0x0000016c ir=0x00010e37  lui t3, 16
+T0319  phase=execute    pc=0x0000016c ir=0x00010e37  lui t3, 16
 T0320  phase=fetch      pc=0x00000170 ir=0x084e0e13  addi t3, t3, 132
 T0321  phase=execute    pc=0x00000170 ir=0x084e0e13  addi t3, t3, 132
 T0322  phase=fetch      pc=0x00000174 ir=0x000e2e83  lw t4, 0(t3)
@@ -410,8 +410,8 @@ T0399  phase=fetch      pc=0x00000164 ir=0x00100f13  addi t5, x0, 1
 T0400  phase=execute    pc=0x00000164 ir=0x00100f13  addi t5, x0, 1
 T0401  phase=fetch      pc=0x00000168 ir=0x01efa823  sw t5, 16(t6)
 T0402  phase=execute    pc=0x00000168 ir=0x01efa823  sw t5, 16(t6)  [ack]
-T0403  phase=fetch      pc=0x0000016c ir=0x00020e37  lui t3, 32
-T0404  phase=execute    pc=0x0000016c ir=0x00020e37  lui t3, 32
+T0403  phase=fetch      pc=0x0000016c ir=0x00010e37  lui t3, 16
+T0404  phase=execute    pc=0x0000016c ir=0x00010e37  lui t3, 16
 T0405  phase=fetch      pc=0x00000170 ir=0x084e0e13  addi t3, t3, 132
 T0406  phase=execute    pc=0x00000170 ir=0x084e0e13  addi t3, t3, 132
 T0407  phase=fetch      pc=0x00000174 ir=0x000e2e83  lw t4, 0(t3)
@@ -535,8 +535,8 @@ T0524  phase=fetch      pc=0x00000164 ir=0x00100f13  addi t5, x0, 1
 T0525  phase=execute    pc=0x00000164 ir=0x00100f13  addi t5, x0, 1
 T0526  phase=fetch      pc=0x00000168 ir=0x01efa823  sw t5, 16(t6)
 T0527  phase=execute    pc=0x00000168 ir=0x01efa823  sw t5, 16(t6)  [ack]
-T0528  phase=fetch      pc=0x0000016c ir=0x00020e37  lui t3, 32
-T0529  phase=execute    pc=0x0000016c ir=0x00020e37  lui t3, 32
+T0528  phase=fetch      pc=0x0000016c ir=0x00010e37  lui t3, 16
+T0529  phase=execute    pc=0x0000016c ir=0x00010e37  lui t3, 16
 T0530  phase=fetch      pc=0x00000170 ir=0x084e0e13  addi t3, t3, 132
 T0531  phase=execute    pc=0x00000170 ir=0x084e0e13  addi t3, t3, 132
 T0532  phase=fetch      pc=0x00000174 ir=0x000e2e83  lw t4, 0(t3)
@@ -711,8 +711,8 @@ T0700  phase=fetch      pc=0x00000094 ir=0x00912423  sw s1, 8(sp)
 T0701  phase=execute    pc=0x00000094 ir=0x00912423  sw s1, 8(sp)
 T0702  phase=fetch      pc=0x00000098 ir=0x01212623  sw s2, 12(sp)
 T0703  phase=execute    pc=0x00000098 ir=0x01212623  sw s2, 12(sp)
-T0704  phase=fetch      pc=0x0000009c ir=0x00020437  lui s0, 32
-T0705  phase=execute    pc=0x0000009c ir=0x00020437  lui s0, 32
+T0704  phase=fetch      pc=0x0000009c ir=0x00010437  lui s0, 16
+T0705  phase=execute    pc=0x0000009c ir=0x00010437  lui s0, 16
 T0706  phase=fetch      pc=0x000000a0 ir=0x08040413  addi s0, s0, 128
 T0707  phase=execute    pc=0x000000a0 ir=0x08040413  addi s0, s0, 128
 T0708  phase=fetch      pc=0x000000a4 ir=0x00042403  lw s0, 0(s0)
@@ -723,8 +723,8 @@ T0712  phase=fetch      pc=0x000000ac ir=0x00000913  addi s2, x0, 0
 T0713  phase=execute    pc=0x000000ac ir=0x00000913  addi s2, x0, 0
 T0714  phase=fetch      pc=0x000000b0 ir=0x04c000ef  jal ra, 76
 T0715  phase=execute    pc=0x000000b0 ir=0x04c000ef  jal ra, 76
-T0716  phase=fetch      pc=0x000000fc ir=0x00020f37  lui t5, 32
-T0717  phase=execute    pc=0x000000fc ir=0x00020f37  lui t5, 32
+T0716  phase=fetch      pc=0x000000fc ir=0x00010f37  lui t5, 16
+T0717  phase=execute    pc=0x000000fc ir=0x00010f37  lui t5, 16
 T0718  phase=fetch      pc=0x00000100 ir=0x084f0f13  addi t5, t5, 132
 T0719  phase=execute    pc=0x00000100 ir=0x084f0f13  addi t5, t5, 132
 T0720  phase=fetch      pc=0x00000104 ir=0x000f2283  lw t0, 0(t5)
@@ -767,8 +767,8 @@ T0756  phase=fetch      pc=0x000000cc ir=0xfe5ff06f  jal x0, -28
 T0757  phase=execute    pc=0x000000cc ir=0xfe5ff06f  jal x0, -28
 T0758  phase=fetch      pc=0x000000b0 ir=0x04c000ef  jal ra, 76
 T0759  phase=execute    pc=0x000000b0 ir=0x04c000ef  jal ra, 76
-T0760  phase=fetch      pc=0x000000fc ir=0x00020f37  lui t5, 32
-T0761  phase=execute    pc=0x000000fc ir=0x00020f37  lui t5, 32
+T0760  phase=fetch      pc=0x000000fc ir=0x00010f37  lui t5, 16
+T0761  phase=execute    pc=0x000000fc ir=0x00010f37  lui t5, 16
 T0762  phase=fetch      pc=0x00000100 ir=0x084f0f13  addi t5, t5, 132
 T0763  phase=execute    pc=0x00000100 ir=0x084f0f13  addi t5, t5, 132
 T0764  phase=fetch      pc=0x00000104 ir=0x000f2283  lw t0, 0(t5)
@@ -811,8 +811,8 @@ T0800  phase=fetch      pc=0x000000cc ir=0xfe5ff06f  jal x0, -28
 T0801  phase=execute    pc=0x000000cc ir=0xfe5ff06f  jal x0, -28
 T0802  phase=fetch      pc=0x000000b0 ir=0x04c000ef  jal ra, 76
 T0803  phase=execute    pc=0x000000b0 ir=0x04c000ef  jal ra, 76
-T0804  phase=fetch      pc=0x000000fc ir=0x00020f37  lui t5, 32
-T0805  phase=execute    pc=0x000000fc ir=0x00020f37  lui t5, 32
+T0804  phase=fetch      pc=0x000000fc ir=0x00010f37  lui t5, 16
+T0805  phase=execute    pc=0x000000fc ir=0x00010f37  lui t5, 16
 T0806  phase=fetch      pc=0x00000100 ir=0x084f0f13  addi t5, t5, 132
 T0807  phase=execute    pc=0x00000100 ir=0x084f0f13  addi t5, t5, 132
 T0808  phase=fetch      pc=0x00000104 ir=0x000f2283  lw t0, 0(t5)
@@ -855,8 +855,8 @@ T0844  phase=fetch      pc=0x000000cc ir=0xfe5ff06f  jal x0, -28
 T0845  phase=execute    pc=0x000000cc ir=0xfe5ff06f  jal x0, -28
 T0846  phase=fetch      pc=0x000000b0 ir=0x04c000ef  jal ra, 76
 T0847  phase=execute    pc=0x000000b0 ir=0x04c000ef  jal ra, 76
-T0848  phase=fetch      pc=0x000000fc ir=0x00020f37  lui t5, 32
-T0849  phase=execute    pc=0x000000fc ir=0x00020f37  lui t5, 32
+T0848  phase=fetch      pc=0x000000fc ir=0x00010f37  lui t5, 16
+T0849  phase=execute    pc=0x000000fc ir=0x00010f37  lui t5, 16
 T0850  phase=fetch      pc=0x00000100 ir=0x084f0f13  addi t5, t5, 132
 T0851  phase=execute    pc=0x00000100 ir=0x084f0f13  addi t5, t5, 132
 T0852  phase=fetch      pc=0x00000104 ir=0x000f2283  lw t0, 0(t5)
@@ -899,8 +899,8 @@ T0888  phase=fetch      pc=0x000000cc ir=0xfe5ff06f  jal x0, -28
 T0889  phase=execute    pc=0x000000cc ir=0xfe5ff06f  jal x0, -28
 T0890  phase=fetch      pc=0x000000b0 ir=0x04c000ef  jal ra, 76
 T0891  phase=execute    pc=0x000000b0 ir=0x04c000ef  jal ra, 76
-T0892  phase=fetch      pc=0x000000fc ir=0x00020f37  lui t5, 32
-T0893  phase=execute    pc=0x000000fc ir=0x00020f37  lui t5, 32
+T0892  phase=fetch      pc=0x000000fc ir=0x00010f37  lui t5, 16
+T0893  phase=execute    pc=0x000000fc ir=0x00010f37  lui t5, 16
 T0894  phase=fetch      pc=0x00000100 ir=0x084f0f13  addi t5, t5, 132
 T0895  phase=execute    pc=0x00000100 ir=0x084f0f13  addi t5, t5, 132
 T0896  phase=fetch      pc=0x00000104 ir=0x000f2283  lw t0, 0(t5)
@@ -943,8 +943,8 @@ T0932  phase=fetch      pc=0x000000cc ir=0xfe5ff06f  jal x0, -28
 T0933  phase=execute    pc=0x000000cc ir=0xfe5ff06f  jal x0, -28
 T0934  phase=fetch      pc=0x000000b0 ir=0x04c000ef  jal ra, 76
 T0935  phase=execute    pc=0x000000b0 ir=0x04c000ef  jal ra, 76
-T0936  phase=fetch      pc=0x000000fc ir=0x00020f37  lui t5, 32
-T0937  phase=execute    pc=0x000000fc ir=0x00020f37  lui t5, 32
+T0936  phase=fetch      pc=0x000000fc ir=0x00010f37  lui t5, 16
+T0937  phase=execute    pc=0x000000fc ir=0x00010f37  lui t5, 16
 T0938  phase=fetch      pc=0x00000100 ir=0x084f0f13  addi t5, t5, 132
 T0939  phase=execute    pc=0x00000100 ir=0x084f0f13  addi t5, t5, 132
 T0940  phase=fetch      pc=0x00000104 ir=0x000f2283  lw t0, 0(t5)
@@ -981,8 +981,8 @@ T0970  phase=fetch      pc=0x000000bc ir=0x0140006f  jal x0, 20
 T0971  phase=execute    pc=0x000000bc ir=0x0140006f  jal x0, 20
 T0972  phase=fetch      pc=0x000000d0 ir=0x01242023  sw s2, 0(s0)
 T0973  phase=execute    pc=0x000000d0 ir=0x01242023  sw s2, 0(s0)
-T0974  phase=fetch      pc=0x000000d4 ir=0x00020f37  lui t5, 32
-T0975  phase=execute    pc=0x000000d4 ir=0x00020f37  lui t5, 32
+T0974  phase=fetch      pc=0x000000d4 ir=0x00010f37  lui t5, 16
+T0975  phase=execute    pc=0x000000d4 ir=0x00010f37  lui t5, 16
 T0976  phase=fetch      pc=0x000000d8 ir=0x080f0f13  addi t5, t5, 128
 T0977  phase=execute    pc=0x000000d8 ir=0x080f0f13  addi t5, t5, 128
 T0978  phase=fetch      pc=0x000000dc ir=0x009f2023  sw s1, 0(t5)
@@ -1001,14 +1001,14 @@ T0990  phase=fetch      pc=0x000000f4 ir=0x01010113  addi sp, sp, 16
 T0991  phase=execute    pc=0x000000f4 ir=0x01010113  addi sp, sp, 16
 T0992  phase=fetch      pc=0x000000f8 ir=0x00008067  jalr x0, 0(ra)
 T0993  phase=execute    pc=0x000000f8 ir=0x00008067  jalr x0, 0(ra)
-T0994  phase=fetch      pc=0x00000014 ir=0x00020fb7  lui t6, 32
-T0995  phase=execute    pc=0x00000014 ir=0x00020fb7  lui t6, 32
+T0994  phase=fetch      pc=0x00000014 ir=0x00010fb7  lui t6, 16
+T0995  phase=execute    pc=0x00000014 ir=0x00010fb7  lui t6, 16
 T0996  phase=fetch      pc=0x00000018 ir=0x050f8f93  addi t6, t6, 80
 T0997  phase=execute    pc=0x00000018 ir=0x050f8f93  addi t6, t6, 80
 T0998  phase=fetch      pc=0x0000001c ir=0x00afa023  sw a0, 0(t6)
 T0999  phase=execute    pc=0x0000001c ir=0x00afa023  sw a0, 0(t6)
-T1000  phase=fetch      pc=0x00000020 ir=0x00020537  lui a0, 32
-T1001  phase=execute    pc=0x00000020 ir=0x00020537  lui a0, 32
+T1000  phase=fetch      pc=0x00000020 ir=0x00010537  lui a0, 16
+T1001  phase=execute    pc=0x00000020 ir=0x00010537  lui a0, 16
 T1002  phase=fetch      pc=0x00000024 ir=0x05450513  addi a0, a0, 84
 T1003  phase=execute    pc=0x00000024 ir=0x05450513  addi a0, a0, 84
 T1004  phase=fetch      pc=0x00000028 ir=0x024000ef  jal ra, 36
@@ -1117,8 +1117,8 @@ T1106  phase=fetch      pc=0x00000080 ir=0x00410113  addi sp, sp, 4
 T1107  phase=execute    pc=0x00000080 ir=0x00410113  addi sp, sp, 4
 T1108  phase=fetch      pc=0x00000084 ir=0x00008067  jalr x0, 0(ra)
 T1109  phase=execute    pc=0x00000084 ir=0x00008067  jalr x0, 0(ra)
-T1110  phase=fetch      pc=0x0000002c ir=0x00020537  lui a0, 32
-T1111  phase=execute    pc=0x0000002c ir=0x00020537  lui a0, 32
+T1110  phase=fetch      pc=0x0000002c ir=0x00010537  lui a0, 16
+T1111  phase=execute    pc=0x0000002c ir=0x00010537  lui a0, 16
 T1112  phase=fetch      pc=0x00000030 ir=0x05050513  addi a0, a0, 80
 T1113  phase=execute    pc=0x00000030 ir=0x05050513  addi a0, a0, 80
 T1114  phase=fetch      pc=0x00000034 ir=0x00052503  lw a0, 0(a0)
@@ -1205,8 +1205,8 @@ T1194  phase=fetch      pc=0x00000080 ir=0x00410113  addi sp, sp, 4
 T1195  phase=execute    pc=0x00000080 ir=0x00410113  addi sp, sp, 4
 T1196  phase=fetch      pc=0x00000084 ir=0x00008067  jalr x0, 0(ra)
 T1197  phase=execute    pc=0x00000084 ir=0x00008067  jalr x0, 0(ra)
-T1198  phase=fetch      pc=0x0000003c ir=0x00020537  lui a0, 32
-T1199  phase=execute    pc=0x0000003c ir=0x00020537  lui a0, 32
+T1198  phase=fetch      pc=0x0000003c ir=0x00010537  lui a0, 16
+T1199  phase=execute    pc=0x0000003c ir=0x00010537  lui a0, 16
 T1200  phase=fetch      pc=0x00000040 ir=0x07450513  addi a0, a0, 116
 T1201  phase=execute    pc=0x00000040 ir=0x07450513  addi a0, a0, 116
 T1202  phase=fetch      pc=0x00000044 ir=0x008000ef  jal ra, 8

@@ -1,561 +1,1013 @@
-source_file: "examples/04_test_utility_for_strings/04_strings_static.lisp"
+source_file: "examples/04_test_strings/04_strings_static.lisp"
 max_ticks: 1000000
 trace_mode: "brief"
 out_lst: |
   entry = 0x00000004
   
   [symbols]
-  __default_input_handler 0x00000184
-  __default_input_handler_done 0x000001f0
-  __g_s_0              0x00020000
-  __rt_input_buf_data  0x0002002c
-  __rt_input_buf_head  0x00020024
-  __rt_input_buf_tail  0x00020028
-  __rt_print_int       0x000000b8
-  __rt_print_int_after_sign 0x000000dc
-  __rt_print_int_digit_loop 0x000000e8
-  __rt_print_int_done  0x0000013c
-  __rt_print_int_negative 0x000000c8
-  __rt_print_int_output_loop 0x00000110
-  __rt_print_int_zero  0x0000012c
-  __rt_print_pstr      0x00000148
-  __rt_print_pstr_done 0x00000178
-  __rt_print_pstr_loop 0x00000160
-  __str_0              0x00020004
-  __str_1              0x0002001c
+  __default_input_handler 0x00000134
+  __default_input_handler_done 0x000001a0
+  __g_s_0              0x00010000
+  __rt_input_buf_data  0x000100dc
+  __rt_input_buf_head  0x000100d4
+  __rt_input_buf_tail  0x000100d8
+  __rt_print_int       0x00000068
+  __rt_print_int_after_sign 0x0000008c
+  __rt_print_int_digit_loop 0x00000098
+  __rt_print_int_done  0x000000ec
+  __rt_print_int_negative 0x00000078
+  __rt_print_int_output_loop 0x000000c0
+  __rt_print_int_zero  0x000000dc
+  __rt_print_pstr      0x000000f8
+  __rt_print_pstr_done 0x00000128
+  __rt_print_pstr_loop 0x00000110
+  __str_0              0x00010004
+  __str_1              0x00010060
+  __str_2              0x00010068
   __trap_vector_table  0x00000000
   _start               0x00000004
   
   [.text @ 0x00000000]
-  00000000 - 84010000         - .word __default_input_handler
-  00000004 - 37050200         - lui a0, 32
+  00000000 - 34010000         - .word __default_input_handler
+  00000004 - 37050100         - lui a0, 16
   00000008 - 13054500         - addi a0, a0, 4
-  0000000c - b70f0200         - lui t6, 32
+  0000000c - b70f0100         - lui t6, 16
   00000010 - 938f0f00         - addi t6, t6, 0
   00000014 - 23a0af00         - sw a0, 0(t6)
-  00000018 - 37050200         - lui a0, 32
+  00000018 - 37050100         - lui a0, 16
   0000001c - 13050500         - addi a0, a0, 0
   00000020 - 03250500         - lw a0, 0(a0)
-  00000024 - ef004012         - jal ra, 292
-  00000028 - 37050200         - lui a0, 32
-  0000002c - 1305c501         - addi a0, a0, 28
-  00000030 - ef008011         - jal ra, 280
-  00000034 - 37050200         - lui a0, 32
-  00000038 - 13050500         - addi a0, a0, 0
-  0000003c - 03250500         - lw a0, 0(a0)
-  00000040 - 03250500         - lw a0, 0(a0)
-  00000044 - ef004007         - jal ra, 116
-  00000048 - 37050200         - lui a0, 32
-  0000004c - 1305c501         - addi a0, a0, 28
-  00000050 - ef00800f         - jal ra, 248
-  00000054 - b7020200         - lui t0, 32
-  00000058 - 93820200         - addi t0, t0, 0
-  0000005c - 83a20200         - lw t0, 0(t0)
-  00000060 - 1301c1ff         - addi sp, sp, -4
-  00000064 - 23205100         - sw t0, 0(sp)
-  00000068 - 13030000         - addi t1, x0, 0
-  0000006c - 1301c1ff         - addi sp, sp, -4
-  00000070 - 23206100         - sw t1, 0(sp)
-  00000074 - 93039005         - addi t2, x0, 89
-  00000078 - 03230100         - lw t1, 0(sp)
-  0000007c - 13014100         - addi sp, sp, 4
-  00000080 - 83220100         - lw t0, 0(sp)
-  00000084 - 13014100         - addi sp, sp, 4
-  00000088 - 130e2000         - addi t3, x0, 2
-  0000008c - 3313c301         - sll t1, t1, t3
-  00000090 - 130e4000         - addi t3, x0, 4
-  00000094 - 3303c301         - add t1, t1, t3
-  00000098 - b3826200         - add t0, t0, t1
-  0000009c - 23a07200         - sw t2, 0(t0)
-  000000a0 - 13850300         - addi a0, t2, 0
-  000000a4 - 37050200         - lui a0, 32
-  000000a8 - 13050500         - addi a0, a0, 0
-  000000ac - 03250500         - lw a0, 0(a0)
-  000000b0 - ef008009         - jal ra, 152
-  000000b4 - 7300f0ff         - halt
-  000000b8 - 1301c1ff         - addi sp, sp, -4
-  000000bc - 2320a100         - sw a0, 0(sp)
-  000000c0 - 63440500         - blt a0, x0, 8
-  000000c4 - 6f008001         - jal x0, 24
-  000000c8 - 370fff00         - lui t5, 4080
-  000000cc - 130f8f00         - addi t5, t5, 8
-  000000d0 - 930fd002         - addi t6, x0, 45
-  000000d4 - 2320ff01         - sw t6, 0(t5)
-  000000d8 - 3305a040         - sub a0, x0, a0
-  000000dc - 63080504         - beq a0, x0, 80
-  000000e0 - 13030000         - addi t1, x0, 0
-  000000e4 - 9303a000         - addi t2, x0, 10
-  000000e8 - 334e7502         - div t3, a0, t2
-  000000ec - b36e7502         - rem t4, a0, t2
-  000000f0 - 1301c1ff         - addi sp, sp, -4
-  000000f4 - 2320d101         - sw t4, 0(sp)
-  000000f8 - 13031300         - addi t1, t1, 1
-  000000fc - 13050e00         - addi a0, t3, 0
-  00000100 - e31405fe         - bne a0, x0, -24
-  00000104 - 370fff00         - lui t5, 4080
-  00000108 - 130f8f00         - addi t5, t5, 8
-  0000010c - 930f0003         - addi t6, x0, 48
-  00000110 - 03250100         - lw a0, 0(sp)
-  00000114 - 13014100         - addi sp, sp, 4
-  00000118 - 3305f501         - add a0, a0, t6
-  0000011c - 2320af00         - sw a0, 0(t5)
-  00000120 - 1303f3ff         - addi t1, t1, -1
-  00000124 - e31603fe         - bne t1, x0, -20
-  00000128 - 6f004001         - jal x0, 20
-  0000012c - 370fff00         - lui t5, 4080
-  00000130 - 130f8f00         - addi t5, t5, 8
-  00000134 - 13050003         - addi a0, x0, 48
-  00000138 - 2320af00         - sw a0, 0(t5)
-  0000013c - 03250100         - lw a0, 0(sp)
-  00000140 - 13014100         - addi sp, sp, 4
-  00000144 - 67800000         - jalr x0, 0(ra)
-  00000148 - 1301c1ff         - addi sp, sp, -4
-  0000014c - 2320a100         - sw a0, 0(sp)
-  00000150 - 83220500         - lw t0, 0(a0)
-  00000154 - 13034500         - addi t1, a0, 4
-  00000158 - 370fff00         - lui t5, 4080
-  0000015c - 130f8f00         - addi t5, t5, 8
-  00000160 - 638c0200         - beq t0, x0, 24
-  00000164 - 832f0300         - lw t6, 0(t1)
-  00000168 - 2320ff01         - sw t6, 0(t5)
-  0000016c - 13034300         - addi t1, t1, 4
-  00000170 - 9382f2ff         - addi t0, t0, -1
-  00000174 - 6ff0dffe         - jal x0, -20
-  00000178 - 03250100         - lw a0, 0(sp)
-  0000017c - 13014100         - addi sp, sp, 4
-  00000180 - 67800000         - jalr x0, 0(ra)
-  00000184 - 130141fe         - addi sp, sp, -28
-  00000188 - 23205100         - sw t0, 0(sp)
-  0000018c - 23226100         - sw t1, 4(sp)
-  00000190 - 23247100         - sw t2, 8(sp)
-  00000194 - 2326c101         - sw t3, 12(sp)
-  00000198 - 2328d101         - sw t4, 16(sp)
-  0000019c - 232ae101         - sw t5, 20(sp)
-  000001a0 - 232cf101         - sw t6, 24(sp)
-  000001a4 - b70fff00         - lui t6, 4080
-  000001a8 - 938f0f00         - addi t6, t6, 0
-  000001ac - 83a24f00         - lw t0, 4(t6)
-  000001b0 - 130f1000         - addi t5, x0, 1
-  000001b4 - 23a8ef01         - sw t5, 16(t6)
-  000001b8 - 370e0200         - lui t3, 32
-  000001bc - 130e4e02         - addi t3, t3, 36
-  000001c0 - 832e0e00         - lw t4, 0(t3)
-  000001c4 - 83234e00         - lw t2, 4(t3)
-  000001c8 - 13831300         - addi t1, t2, 1
-  000001cc - 130ff000         - addi t5, x0, 15
-  000001d0 - 3373e301         - and t1, t1, t5
-  000001d4 - 630ed301         - beq t1, t4, 28
-  000001d8 - 930f2000         - addi t6, x0, 2
-  000001dc - 339ff301         - sll t5, t2, t6
-  000001e0 - 930f8e00         - addi t6, t3, 8
-  000001e4 - b38fef01         - add t6, t6, t5
-  000001e8 - 23a05f00         - sw t0, 0(t6)
-  000001ec - 23226e00         - sw t1, 4(t3)
-  000001f0 - 83220100         - lw t0, 0(sp)
-  000001f4 - 03234100         - lw t1, 4(sp)
-  000001f8 - 83238100         - lw t2, 8(sp)
-  000001fc - 032ec100         - lw t3, 12(sp)
-  00000200 - 832e0101         - lw t4, 16(sp)
-  00000204 - 032f4101         - lw t5, 20(sp)
-  00000208 - 832f8101         - lw t6, 24(sp)
-  0000020c - 1301c101         - addi sp, sp, 28
-  00000210 - 73002030         - mret
+  00000024 - ef00400d         - jal ra, 212
+  00000028 - 37050100         - lui a0, 16
+  0000002c - 13050506         - addi a0, a0, 96
+  00000030 - ef00800c         - jal ra, 200
+  00000034 - 37050100         - lui a0, 16
+  00000038 - 13058506         - addi a0, a0, 104
+  0000003c - ef00c00b         - jal ra, 188
+  00000040 - 37050100         - lui a0, 16
+  00000044 - 13050506         - addi a0, a0, 96
+  00000048 - ef00000b         - jal ra, 176
+  0000004c - 1305a002         - addi a0, x0, 42
+  00000050 - ef008001         - jal ra, 24
+  00000054 - 37050100         - lui a0, 16
+  00000058 - 13050506         - addi a0, a0, 96
+  0000005c - ef00c009         - jal ra, 156
+  00000060 - 7300f0ff         - halt
+  00000064 - 7300f0ff         - halt
+  00000068 - 1301c1ff         - addi sp, sp, -4
+  0000006c - 2320a100         - sw a0, 0(sp)
+  00000070 - 63440500         - blt a0, x0, 8
+  00000074 - 6f008001         - jal x0, 24
+  00000078 - 370fff00         - lui t5, 4080
+  0000007c - 130f8f00         - addi t5, t5, 8
+  00000080 - 930fd002         - addi t6, x0, 45
+  00000084 - 2320ff01         - sw t6, 0(t5)
+  00000088 - 3305a040         - sub a0, x0, a0
+  0000008c - 63080504         - beq a0, x0, 80
+  00000090 - 13030000         - addi t1, x0, 0
+  00000094 - 9303a000         - addi t2, x0, 10
+  00000098 - 334e7502         - div t3, a0, t2
+  0000009c - b36e7502         - rem t4, a0, t2
+  000000a0 - 1301c1ff         - addi sp, sp, -4
+  000000a4 - 2320d101         - sw t4, 0(sp)
+  000000a8 - 13031300         - addi t1, t1, 1
+  000000ac - 13050e00         - addi a0, t3, 0
+  000000b0 - e31405fe         - bne a0, x0, -24
+  000000b4 - 370fff00         - lui t5, 4080
+  000000b8 - 130f8f00         - addi t5, t5, 8
+  000000bc - 930f0003         - addi t6, x0, 48
+  000000c0 - 03250100         - lw a0, 0(sp)
+  000000c4 - 13014100         - addi sp, sp, 4
+  000000c8 - 3305f501         - add a0, a0, t6
+  000000cc - 2320af00         - sw a0, 0(t5)
+  000000d0 - 1303f3ff         - addi t1, t1, -1
+  000000d4 - e31603fe         - bne t1, x0, -20
+  000000d8 - 6f004001         - jal x0, 20
+  000000dc - 370fff00         - lui t5, 4080
+  000000e0 - 130f8f00         - addi t5, t5, 8
+  000000e4 - 13050003         - addi a0, x0, 48
+  000000e8 - 2320af00         - sw a0, 0(t5)
+  000000ec - 03250100         - lw a0, 0(sp)
+  000000f0 - 13014100         - addi sp, sp, 4
+  000000f4 - 67800000         - jalr x0, 0(ra)
+  000000f8 - 1301c1ff         - addi sp, sp, -4
+  000000fc - 2320a100         - sw a0, 0(sp)
+  00000100 - 83220500         - lw t0, 0(a0)
+  00000104 - 13034500         - addi t1, a0, 4
+  00000108 - 370fff00         - lui t5, 4080
+  0000010c - 130f8f00         - addi t5, t5, 8
+  00000110 - 638c0200         - beq t0, x0, 24
+  00000114 - 832f0300         - lw t6, 0(t1)
+  00000118 - 2320ff01         - sw t6, 0(t5)
+  0000011c - 13034300         - addi t1, t1, 4
+  00000120 - 9382f2ff         - addi t0, t0, -1
+  00000124 - 6ff0dffe         - jal x0, -20
+  00000128 - 03250100         - lw a0, 0(sp)
+  0000012c - 13014100         - addi sp, sp, 4
+  00000130 - 67800000         - jalr x0, 0(ra)
+  00000134 - 130141fe         - addi sp, sp, -28
+  00000138 - 23205100         - sw t0, 0(sp)
+  0000013c - 23226100         - sw t1, 4(sp)
+  00000140 - 23247100         - sw t2, 8(sp)
+  00000144 - 2326c101         - sw t3, 12(sp)
+  00000148 - 2328d101         - sw t4, 16(sp)
+  0000014c - 232ae101         - sw t5, 20(sp)
+  00000150 - 232cf101         - sw t6, 24(sp)
+  00000154 - b70fff00         - lui t6, 4080
+  00000158 - 938f0f00         - addi t6, t6, 0
+  0000015c - 83a24f00         - lw t0, 4(t6)
+  00000160 - 130f1000         - addi t5, x0, 1
+  00000164 - 23a8ef01         - sw t5, 16(t6)
+  00000168 - 370e0100         - lui t3, 16
+  0000016c - 130e4e0d         - addi t3, t3, 212
+  00000170 - 832e0e00         - lw t4, 0(t3)
+  00000174 - 83234e00         - lw t2, 4(t3)
+  00000178 - 13831300         - addi t1, t2, 1
+  0000017c - 130ff000         - addi t5, x0, 15
+  00000180 - 3373e301         - and t1, t1, t5
+  00000184 - 630ed301         - beq t1, t4, 28
+  00000188 - 930f2000         - addi t6, x0, 2
+  0000018c - 339ff301         - sll t5, t2, t6
+  00000190 - 930f8e00         - addi t6, t3, 8
+  00000194 - b38fef01         - add t6, t6, t5
+  00000198 - 23a05f00         - sw t0, 0(t6)
+  0000019c - 23226e00         - sw t1, 4(t3)
+  000001a0 - 83220100         - lw t0, 0(sp)
+  000001a4 - 03234100         - lw t1, 4(sp)
+  000001a8 - 83238100         - lw t2, 8(sp)
+  000001ac - 032ec100         - lw t3, 12(sp)
+  000001b0 - 832e0101         - lw t4, 16(sp)
+  000001b4 - 032f4101         - lw t5, 20(sp)
+  000001b8 - 832f8101         - lw t6, 24(sp)
+  000001bc - 1301c101         - addi sp, sp, 28
+  000001c0 - 73002030         - mret
   
-  [.rodata @ 0x00010000]
-  
-  [.data @ 0x00020000]
-  00020000 - 00000000         - .word 0x00000000
-  00020004 - 0500000048000000650000006c0000006c0000006f000000 - .pstr "Hello"
-  0002001c - 010000000a000000 - .pstr "
+  [.data @ 0x00010000]
+  00010000 - 00000000         - .word 0x00000000
+  00010004 - 1600000048000000650000006c0000006c0000006f0000002000000066000000720000006f0000006d000000200000007300000074000000610000007400000069000000630000002000000070000000730000007400000072000000 - .pstr "Hello from static pstr"
+  00010060 - 010000000a000000 - .pstr "
   "
-  00020024 - 00000000         - .word 0x00000000
-  00020028 - 00000000         - .word 0x00000000
-  0002002c - 00000000         - .word 0x00000000
-  00020030 - 00000000         - .word 0x00000000
-  00020034 - 00000000         - .word 0x00000000
-  00020038 - 00000000         - .word 0x00000000
-  0002003c - 00000000         - .word 0x00000000
-  00020040 - 00000000         - .word 0x00000000
-  00020044 - 00000000         - .word 0x00000000
-  00020048 - 00000000         - .word 0x00000000
-  0002004c - 00000000         - .word 0x00000000
-  00020050 - 00000000         - .word 0x00000000
-  00020054 - 00000000         - .word 0x00000000
-  00020058 - 00000000         - .word 0x00000000
-  0002005c - 00000000         - .word 0x00000000
-  00020060 - 00000000         - .word 0x00000000
-  00020064 - 00000000         - .word 0x00000000
-  00020068 - 00000000         - .word 0x00000000
-out_output: |-
-  Hello
-  5
-  Yello
+  00010068 - 1a000000530000007400000072000000690000006e00000067000000200000006c00000069000000740000006500000072000000610000006c00000073000000200000007300000074000000690000006c0000006c00000020000000770000006f000000720000006b000000 - .pstr "String literals still work"
+  000100d4 - 00000000         - .word 0x00000000
+  000100d8 - 00000000         - .word 0x00000000
+  000100dc - 00000000         - .word 0x00000000
+  000100e0 - 00000000         - .word 0x00000000
+  000100e4 - 00000000         - .word 0x00000000
+  000100e8 - 00000000         - .word 0x00000000
+  000100ec - 00000000         - .word 0x00000000
+  000100f0 - 00000000         - .word 0x00000000
+  000100f4 - 00000000         - .word 0x00000000
+  000100f8 - 00000000         - .word 0x00000000
+  000100fc - 00000000         - .word 0x00000000
+  00010100 - 00000000         - .word 0x00000000
+  00010104 - 00000000         - .word 0x00000000
+  00010108 - 00000000         - .word 0x00000000
+  0001010c - 00000000         - .word 0x00000000
+  00010110 - 00000000         - .word 0x00000000
+  00010114 - 00000000         - .word 0x00000000
+  00010118 - 00000000         - .word 0x00000000
+out_output: |
+  Hello from static pstr
+  String literals still work
+  42
 out_log: |
-  T0000  phase=fetch      pc=0x00000004 ir=0x00020537  lui a0, 32
-  T0001  phase=execute    pc=0x00000004 ir=0x00020537  lui a0, 32
+  T0000  phase=fetch      pc=0x00000004 ir=0x00010537  lui a0, 16
+  T0001  phase=execute    pc=0x00000004 ir=0x00010537  lui a0, 16
   T0002  phase=fetch      pc=0x00000008 ir=0x00450513  addi a0, a0, 4
   T0003  phase=execute    pc=0x00000008 ir=0x00450513  addi a0, a0, 4
-  T0004  phase=fetch      pc=0x0000000c ir=0x00020fb7  lui t6, 32
-  T0005  phase=execute    pc=0x0000000c ir=0x00020fb7  lui t6, 32
+  T0004  phase=fetch      pc=0x0000000c ir=0x00010fb7  lui t6, 16
+  T0005  phase=execute    pc=0x0000000c ir=0x00010fb7  lui t6, 16
   T0006  phase=fetch      pc=0x00000010 ir=0x000f8f93  addi t6, t6, 0
   T0007  phase=execute    pc=0x00000010 ir=0x000f8f93  addi t6, t6, 0
   T0008  phase=fetch      pc=0x00000014 ir=0x00afa023  sw a0, 0(t6)
   T0009  phase=execute    pc=0x00000014 ir=0x00afa023  sw a0, 0(t6)
-  T0010  phase=fetch      pc=0x00000018 ir=0x00020537  lui a0, 32
-  T0011  phase=execute    pc=0x00000018 ir=0x00020537  lui a0, 32
+  T0010  phase=fetch      pc=0x00000018 ir=0x00010537  lui a0, 16
+  T0011  phase=execute    pc=0x00000018 ir=0x00010537  lui a0, 16
   T0012  phase=fetch      pc=0x0000001c ir=0x00050513  addi a0, a0, 0
   T0013  phase=execute    pc=0x0000001c ir=0x00050513  addi a0, a0, 0
   T0014  phase=fetch      pc=0x00000020 ir=0x00052503  lw a0, 0(a0)
   T0015  phase=execute    pc=0x00000020 ir=0x00052503  lw a0, 0(a0)
-  T0016  phase=fetch      pc=0x00000024 ir=0x124000ef  jal ra, 292
-  T0017  phase=execute    pc=0x00000024 ir=0x124000ef  jal ra, 292
-  T0018  phase=fetch      pc=0x00000148 ir=0xffc10113  addi sp, sp, -4
-  T0019  phase=execute    pc=0x00000148 ir=0xffc10113  addi sp, sp, -4
-  T0020  phase=fetch      pc=0x0000014c ir=0x00a12023  sw a0, 0(sp)
-  T0021  phase=execute    pc=0x0000014c ir=0x00a12023  sw a0, 0(sp)
-  T0022  phase=fetch      pc=0x00000150 ir=0x00052283  lw t0, 0(a0)
-  T0023  phase=execute    pc=0x00000150 ir=0x00052283  lw t0, 0(a0)
-  T0024  phase=fetch      pc=0x00000154 ir=0x00450313  addi t1, a0, 4
-  T0025  phase=execute    pc=0x00000154 ir=0x00450313  addi t1, a0, 4
-  T0026  phase=fetch      pc=0x00000158 ir=0x00ff0f37  lui t5, 4080
-  T0027  phase=execute    pc=0x00000158 ir=0x00ff0f37  lui t5, 4080
-  T0028  phase=fetch      pc=0x0000015c ir=0x008f0f13  addi t5, t5, 8
-  T0029  phase=execute    pc=0x0000015c ir=0x008f0f13  addi t5, t5, 8
-  T0030  phase=fetch      pc=0x00000160 ir=0x00028c63  beq t0, x0, 24
-  T0031  phase=execute    pc=0x00000160 ir=0x00028c63  beq t0, x0, 24
-  T0032  phase=fetch      pc=0x00000164 ir=0x00032f83  lw t6, 0(t1)
-  T0033  phase=execute    pc=0x00000164 ir=0x00032f83  lw t6, 0(t1)
-  T0034  phase=fetch      pc=0x00000168 ir=0x01ff2023  sw t6, 0(t5)
-  T0035  phase=execute    pc=0x00000168 ir=0x01ff2023  sw t6, 0(t5)  [out='H']
-  T0036  phase=fetch      pc=0x0000016c ir=0x00430313  addi t1, t1, 4
-  T0037  phase=execute    pc=0x0000016c ir=0x00430313  addi t1, t1, 4
-  T0038  phase=fetch      pc=0x00000170 ir=0xfff28293  addi t0, t0, -1
-  T0039  phase=execute    pc=0x00000170 ir=0xfff28293  addi t0, t0, -1
-  T0040  phase=fetch      pc=0x00000174 ir=0xfedff06f  jal x0, -20
-  T0041  phase=execute    pc=0x00000174 ir=0xfedff06f  jal x0, -20
-  T0042  phase=fetch      pc=0x00000160 ir=0x00028c63  beq t0, x0, 24
-  T0043  phase=execute    pc=0x00000160 ir=0x00028c63  beq t0, x0, 24
-  T0044  phase=fetch      pc=0x00000164 ir=0x00032f83  lw t6, 0(t1)
-  T0045  phase=execute    pc=0x00000164 ir=0x00032f83  lw t6, 0(t1)
-  T0046  phase=fetch      pc=0x00000168 ir=0x01ff2023  sw t6, 0(t5)
-  T0047  phase=execute    pc=0x00000168 ir=0x01ff2023  sw t6, 0(t5)  [out='e']
-  T0048  phase=fetch      pc=0x0000016c ir=0x00430313  addi t1, t1, 4
-  T0049  phase=execute    pc=0x0000016c ir=0x00430313  addi t1, t1, 4
-  T0050  phase=fetch      pc=0x00000170 ir=0xfff28293  addi t0, t0, -1
-  T0051  phase=execute    pc=0x00000170 ir=0xfff28293  addi t0, t0, -1
-  T0052  phase=fetch      pc=0x00000174 ir=0xfedff06f  jal x0, -20
-  T0053  phase=execute    pc=0x00000174 ir=0xfedff06f  jal x0, -20
-  T0054  phase=fetch      pc=0x00000160 ir=0x00028c63  beq t0, x0, 24
-  T0055  phase=execute    pc=0x00000160 ir=0x00028c63  beq t0, x0, 24
-  T0056  phase=fetch      pc=0x00000164 ir=0x00032f83  lw t6, 0(t1)
-  T0057  phase=execute    pc=0x00000164 ir=0x00032f83  lw t6, 0(t1)
-  T0058  phase=fetch      pc=0x00000168 ir=0x01ff2023  sw t6, 0(t5)
-  T0059  phase=execute    pc=0x00000168 ir=0x01ff2023  sw t6, 0(t5)  [out='l']
-  T0060  phase=fetch      pc=0x0000016c ir=0x00430313  addi t1, t1, 4
-  T0061  phase=execute    pc=0x0000016c ir=0x00430313  addi t1, t1, 4
-  T0062  phase=fetch      pc=0x00000170 ir=0xfff28293  addi t0, t0, -1
-  T0063  phase=execute    pc=0x00000170 ir=0xfff28293  addi t0, t0, -1
-  T0064  phase=fetch      pc=0x00000174 ir=0xfedff06f  jal x0, -20
-  T0065  phase=execute    pc=0x00000174 ir=0xfedff06f  jal x0, -20
-  T0066  phase=fetch      pc=0x00000160 ir=0x00028c63  beq t0, x0, 24
-  T0067  phase=execute    pc=0x00000160 ir=0x00028c63  beq t0, x0, 24
-  T0068  phase=fetch      pc=0x00000164 ir=0x00032f83  lw t6, 0(t1)
-  T0069  phase=execute    pc=0x00000164 ir=0x00032f83  lw t6, 0(t1)
-  T0070  phase=fetch      pc=0x00000168 ir=0x01ff2023  sw t6, 0(t5)
-  T0071  phase=execute    pc=0x00000168 ir=0x01ff2023  sw t6, 0(t5)  [out='l']
-  T0072  phase=fetch      pc=0x0000016c ir=0x00430313  addi t1, t1, 4
-  T0073  phase=execute    pc=0x0000016c ir=0x00430313  addi t1, t1, 4
-  T0074  phase=fetch      pc=0x00000170 ir=0xfff28293  addi t0, t0, -1
-  T0075  phase=execute    pc=0x00000170 ir=0xfff28293  addi t0, t0, -1
-  T0076  phase=fetch      pc=0x00000174 ir=0xfedff06f  jal x0, -20
-  T0077  phase=execute    pc=0x00000174 ir=0xfedff06f  jal x0, -20
-  T0078  phase=fetch      pc=0x00000160 ir=0x00028c63  beq t0, x0, 24
-  T0079  phase=execute    pc=0x00000160 ir=0x00028c63  beq t0, x0, 24
-  T0080  phase=fetch      pc=0x00000164 ir=0x00032f83  lw t6, 0(t1)
-  T0081  phase=execute    pc=0x00000164 ir=0x00032f83  lw t6, 0(t1)
-  T0082  phase=fetch      pc=0x00000168 ir=0x01ff2023  sw t6, 0(t5)
-  T0083  phase=execute    pc=0x00000168 ir=0x01ff2023  sw t6, 0(t5)  [out='o']
-  T0084  phase=fetch      pc=0x0000016c ir=0x00430313  addi t1, t1, 4
-  T0085  phase=execute    pc=0x0000016c ir=0x00430313  addi t1, t1, 4
-  T0086  phase=fetch      pc=0x00000170 ir=0xfff28293  addi t0, t0, -1
-  T0087  phase=execute    pc=0x00000170 ir=0xfff28293  addi t0, t0, -1
-  T0088  phase=fetch      pc=0x00000174 ir=0xfedff06f  jal x0, -20
-  T0089  phase=execute    pc=0x00000174 ir=0xfedff06f  jal x0, -20
-  T0090  phase=fetch      pc=0x00000160 ir=0x00028c63  beq t0, x0, 24
-  T0091  phase=execute    pc=0x00000160 ir=0x00028c63  beq t0, x0, 24  [branch=taken]
-  T0092  phase=fetch      pc=0x00000178 ir=0x00012503  lw a0, 0(sp)
-  T0093  phase=execute    pc=0x00000178 ir=0x00012503  lw a0, 0(sp)
-  T0094  phase=fetch      pc=0x0000017c ir=0x00410113  addi sp, sp, 4
-  T0095  phase=execute    pc=0x0000017c ir=0x00410113  addi sp, sp, 4
-  T0096  phase=fetch      pc=0x00000180 ir=0x00008067  jalr x0, 0(ra)
-  T0097  phase=execute    pc=0x00000180 ir=0x00008067  jalr x0, 0(ra)
-  T0098  phase=fetch      pc=0x00000028 ir=0x00020537  lui a0, 32
-  T0099  phase=execute    pc=0x00000028 ir=0x00020537  lui a0, 32
-  T0100  phase=fetch      pc=0x0000002c ir=0x01c50513  addi a0, a0, 28
-  T0101  phase=execute    pc=0x0000002c ir=0x01c50513  addi a0, a0, 28
-  T0102  phase=fetch      pc=0x00000030 ir=0x118000ef  jal ra, 280
-  T0103  phase=execute    pc=0x00000030 ir=0x118000ef  jal ra, 280
-  T0104  phase=fetch      pc=0x00000148 ir=0xffc10113  addi sp, sp, -4
-  T0105  phase=execute    pc=0x00000148 ir=0xffc10113  addi sp, sp, -4
-  T0106  phase=fetch      pc=0x0000014c ir=0x00a12023  sw a0, 0(sp)
-  T0107  phase=execute    pc=0x0000014c ir=0x00a12023  sw a0, 0(sp)
-  T0108  phase=fetch      pc=0x00000150 ir=0x00052283  lw t0, 0(a0)
-  T0109  phase=execute    pc=0x00000150 ir=0x00052283  lw t0, 0(a0)
-  T0110  phase=fetch      pc=0x00000154 ir=0x00450313  addi t1, a0, 4
-  T0111  phase=execute    pc=0x00000154 ir=0x00450313  addi t1, a0, 4
-  T0112  phase=fetch      pc=0x00000158 ir=0x00ff0f37  lui t5, 4080
-  T0113  phase=execute    pc=0x00000158 ir=0x00ff0f37  lui t5, 4080
-  T0114  phase=fetch      pc=0x0000015c ir=0x008f0f13  addi t5, t5, 8
-  T0115  phase=execute    pc=0x0000015c ir=0x008f0f13  addi t5, t5, 8
-  T0116  phase=fetch      pc=0x00000160 ir=0x00028c63  beq t0, x0, 24
-  T0117  phase=execute    pc=0x00000160 ir=0x00028c63  beq t0, x0, 24
-  T0118  phase=fetch      pc=0x00000164 ir=0x00032f83  lw t6, 0(t1)
-  T0119  phase=execute    pc=0x00000164 ir=0x00032f83  lw t6, 0(t1)
-  T0120  phase=fetch      pc=0x00000168 ir=0x01ff2023  sw t6, 0(t5)
-  T0121  phase=execute    pc=0x00000168 ir=0x01ff2023  sw t6, 0(t5)  [out='\n']
-  T0122  phase=fetch      pc=0x0000016c ir=0x00430313  addi t1, t1, 4
-  T0123  phase=execute    pc=0x0000016c ir=0x00430313  addi t1, t1, 4
-  T0124  phase=fetch      pc=0x00000170 ir=0xfff28293  addi t0, t0, -1
-  T0125  phase=execute    pc=0x00000170 ir=0xfff28293  addi t0, t0, -1
-  T0126  phase=fetch      pc=0x00000174 ir=0xfedff06f  jal x0, -20
-  T0127  phase=execute    pc=0x00000174 ir=0xfedff06f  jal x0, -20
-  T0128  phase=fetch      pc=0x00000160 ir=0x00028c63  beq t0, x0, 24
-  T0129  phase=execute    pc=0x00000160 ir=0x00028c63  beq t0, x0, 24  [branch=taken]
-  T0130  phase=fetch      pc=0x00000178 ir=0x00012503  lw a0, 0(sp)
-  T0131  phase=execute    pc=0x00000178 ir=0x00012503  lw a0, 0(sp)
-  T0132  phase=fetch      pc=0x0000017c ir=0x00410113  addi sp, sp, 4
-  T0133  phase=execute    pc=0x0000017c ir=0x00410113  addi sp, sp, 4
-  T0134  phase=fetch      pc=0x00000180 ir=0x00008067  jalr x0, 0(ra)
-  T0135  phase=execute    pc=0x00000180 ir=0x00008067  jalr x0, 0(ra)
-  T0136  phase=fetch      pc=0x00000034 ir=0x00020537  lui a0, 32
-  T0137  phase=execute    pc=0x00000034 ir=0x00020537  lui a0, 32
-  T0138  phase=fetch      pc=0x00000038 ir=0x00050513  addi a0, a0, 0
-  T0139  phase=execute    pc=0x00000038 ir=0x00050513  addi a0, a0, 0
-  T0140  phase=fetch      pc=0x0000003c ir=0x00052503  lw a0, 0(a0)
-  T0141  phase=execute    pc=0x0000003c ir=0x00052503  lw a0, 0(a0)
-  T0142  phase=fetch      pc=0x00000040 ir=0x00052503  lw a0, 0(a0)
-  T0143  phase=execute    pc=0x00000040 ir=0x00052503  lw a0, 0(a0)
-  T0144  phase=fetch      pc=0x00000044 ir=0x074000ef  jal ra, 116
-  T0145  phase=execute    pc=0x00000044 ir=0x074000ef  jal ra, 116
-  T0146  phase=fetch      pc=0x000000b8 ir=0xffc10113  addi sp, sp, -4
-  T0147  phase=execute    pc=0x000000b8 ir=0xffc10113  addi sp, sp, -4
-  T0148  phase=fetch      pc=0x000000bc ir=0x00a12023  sw a0, 0(sp)
-  T0149  phase=execute    pc=0x000000bc ir=0x00a12023  sw a0, 0(sp)
-  T0150  phase=fetch      pc=0x000000c0 ir=0x00054463  blt a0, x0, 8
-  T0151  phase=execute    pc=0x000000c0 ir=0x00054463  blt a0, x0, 8
-  T0152  phase=fetch      pc=0x000000c4 ir=0x0180006f  jal x0, 24
-  T0153  phase=execute    pc=0x000000c4 ir=0x0180006f  jal x0, 24
-  T0154  phase=fetch      pc=0x000000dc ir=0x04050863  beq a0, x0, 80
-  T0155  phase=execute    pc=0x000000dc ir=0x04050863  beq a0, x0, 80
-  T0156  phase=fetch      pc=0x000000e0 ir=0x00000313  addi t1, x0, 0
-  T0157  phase=execute    pc=0x000000e0 ir=0x00000313  addi t1, x0, 0
-  T0158  phase=fetch      pc=0x000000e4 ir=0x00a00393  addi t2, x0, 10
-  T0159  phase=execute    pc=0x000000e4 ir=0x00a00393  addi t2, x0, 10
-  T0160  phase=fetch      pc=0x000000e8 ir=0x02754e33  div t3, a0, t2
-  T0161  phase=execute    pc=0x000000e8 ir=0x02754e33  div t3, a0, t2
-  T0162  phase=fetch      pc=0x000000ec ir=0x02756eb3  rem t4, a0, t2
-  T0163  phase=execute    pc=0x000000ec ir=0x02756eb3  rem t4, a0, t2
-  T0164  phase=fetch      pc=0x000000f0 ir=0xffc10113  addi sp, sp, -4
-  T0165  phase=execute    pc=0x000000f0 ir=0xffc10113  addi sp, sp, -4
-  T0166  phase=fetch      pc=0x000000f4 ir=0x01d12023  sw t4, 0(sp)
-  T0167  phase=execute    pc=0x000000f4 ir=0x01d12023  sw t4, 0(sp)
-  T0168  phase=fetch      pc=0x000000f8 ir=0x00130313  addi t1, t1, 1
-  T0169  phase=execute    pc=0x000000f8 ir=0x00130313  addi t1, t1, 1
-  T0170  phase=fetch      pc=0x000000fc ir=0x000e0513  addi a0, t3, 0
-  T0171  phase=execute    pc=0x000000fc ir=0x000e0513  addi a0, t3, 0
-  T0172  phase=fetch      pc=0x00000100 ir=0xfe0514e3  bne a0, x0, -24
-  T0173  phase=execute    pc=0x00000100 ir=0xfe0514e3  bne a0, x0, -24
-  T0174  phase=fetch      pc=0x00000104 ir=0x00ff0f37  lui t5, 4080
-  T0175  phase=execute    pc=0x00000104 ir=0x00ff0f37  lui t5, 4080
-  T0176  phase=fetch      pc=0x00000108 ir=0x008f0f13  addi t5, t5, 8
-  T0177  phase=execute    pc=0x00000108 ir=0x008f0f13  addi t5, t5, 8
-  T0178  phase=fetch      pc=0x0000010c ir=0x03000f93  addi t6, x0, 48
-  T0179  phase=execute    pc=0x0000010c ir=0x03000f93  addi t6, x0, 48
-  T0180  phase=fetch      pc=0x00000110 ir=0x00012503  lw a0, 0(sp)
-  T0181  phase=execute    pc=0x00000110 ir=0x00012503  lw a0, 0(sp)
-  T0182  phase=fetch      pc=0x00000114 ir=0x00410113  addi sp, sp, 4
-  T0183  phase=execute    pc=0x00000114 ir=0x00410113  addi sp, sp, 4
-  T0184  phase=fetch      pc=0x00000118 ir=0x01f50533  add a0, a0, t6
-  T0185  phase=execute    pc=0x00000118 ir=0x01f50533  add a0, a0, t6
-  T0186  phase=fetch      pc=0x0000011c ir=0x00af2023  sw a0, 0(t5)
-  T0187  phase=execute    pc=0x0000011c ir=0x00af2023  sw a0, 0(t5)  [out='5']
-  T0188  phase=fetch      pc=0x00000120 ir=0xfff30313  addi t1, t1, -1
-  T0189  phase=execute    pc=0x00000120 ir=0xfff30313  addi t1, t1, -1
-  T0190  phase=fetch      pc=0x00000124 ir=0xfe0316e3  bne t1, x0, -20
-  T0191  phase=execute    pc=0x00000124 ir=0xfe0316e3  bne t1, x0, -20
-  T0192  phase=fetch      pc=0x00000128 ir=0x0140006f  jal x0, 20
-  T0193  phase=execute    pc=0x00000128 ir=0x0140006f  jal x0, 20
-  T0194  phase=fetch      pc=0x0000013c ir=0x00012503  lw a0, 0(sp)
-  T0195  phase=execute    pc=0x0000013c ir=0x00012503  lw a0, 0(sp)
-  T0196  phase=fetch      pc=0x00000140 ir=0x00410113  addi sp, sp, 4
-  T0197  phase=execute    pc=0x00000140 ir=0x00410113  addi sp, sp, 4
-  T0198  phase=fetch      pc=0x00000144 ir=0x00008067  jalr x0, 0(ra)
-  T0199  phase=execute    pc=0x00000144 ir=0x00008067  jalr x0, 0(ra)
-  T0200  phase=fetch      pc=0x00000048 ir=0x00020537  lui a0, 32
-  T0201  phase=execute    pc=0x00000048 ir=0x00020537  lui a0, 32
-  T0202  phase=fetch      pc=0x0000004c ir=0x01c50513  addi a0, a0, 28
-  T0203  phase=execute    pc=0x0000004c ir=0x01c50513  addi a0, a0, 28
-  T0204  phase=fetch      pc=0x00000050 ir=0x0f8000ef  jal ra, 248
-  T0205  phase=execute    pc=0x00000050 ir=0x0f8000ef  jal ra, 248
-  T0206  phase=fetch      pc=0x00000148 ir=0xffc10113  addi sp, sp, -4
-  T0207  phase=execute    pc=0x00000148 ir=0xffc10113  addi sp, sp, -4
-  T0208  phase=fetch      pc=0x0000014c ir=0x00a12023  sw a0, 0(sp)
-  T0209  phase=execute    pc=0x0000014c ir=0x00a12023  sw a0, 0(sp)
-  T0210  phase=fetch      pc=0x00000150 ir=0x00052283  lw t0, 0(a0)
-  T0211  phase=execute    pc=0x00000150 ir=0x00052283  lw t0, 0(a0)
-  T0212  phase=fetch      pc=0x00000154 ir=0x00450313  addi t1, a0, 4
-  T0213  phase=execute    pc=0x00000154 ir=0x00450313  addi t1, a0, 4
-  T0214  phase=fetch      pc=0x00000158 ir=0x00ff0f37  lui t5, 4080
-  T0215  phase=execute    pc=0x00000158 ir=0x00ff0f37  lui t5, 4080
-  T0216  phase=fetch      pc=0x0000015c ir=0x008f0f13  addi t5, t5, 8
-  T0217  phase=execute    pc=0x0000015c ir=0x008f0f13  addi t5, t5, 8
-  T0218  phase=fetch      pc=0x00000160 ir=0x00028c63  beq t0, x0, 24
-  T0219  phase=execute    pc=0x00000160 ir=0x00028c63  beq t0, x0, 24
-  T0220  phase=fetch      pc=0x00000164 ir=0x00032f83  lw t6, 0(t1)
-  T0221  phase=execute    pc=0x00000164 ir=0x00032f83  lw t6, 0(t1)
-  T0222  phase=fetch      pc=0x00000168 ir=0x01ff2023  sw t6, 0(t5)
-  T0223  phase=execute    pc=0x00000168 ir=0x01ff2023  sw t6, 0(t5)  [out='\n']
-  T0224  phase=fetch      pc=0x0000016c ir=0x00430313  addi t1, t1, 4
-  T0225  phase=execute    pc=0x0000016c ir=0x00430313  addi t1, t1, 4
-  T0226  phase=fetch      pc=0x00000170 ir=0xfff28293  addi t0, t0, -1
-  T0227  phase=execute    pc=0x00000170 ir=0xfff28293  addi t0, t0, -1
-  T0228  phase=fetch      pc=0x00000174 ir=0xfedff06f  jal x0, -20
-  T0229  phase=execute    pc=0x00000174 ir=0xfedff06f  jal x0, -20
-  T0230  phase=fetch      pc=0x00000160 ir=0x00028c63  beq t0, x0, 24
-  T0231  phase=execute    pc=0x00000160 ir=0x00028c63  beq t0, x0, 24  [branch=taken]
-  T0232  phase=fetch      pc=0x00000178 ir=0x00012503  lw a0, 0(sp)
-  T0233  phase=execute    pc=0x00000178 ir=0x00012503  lw a0, 0(sp)
-  T0234  phase=fetch      pc=0x0000017c ir=0x00410113  addi sp, sp, 4
-  T0235  phase=execute    pc=0x0000017c ir=0x00410113  addi sp, sp, 4
-  T0236  phase=fetch      pc=0x00000180 ir=0x00008067  jalr x0, 0(ra)
-  T0237  phase=execute    pc=0x00000180 ir=0x00008067  jalr x0, 0(ra)
-  T0238  phase=fetch      pc=0x00000054 ir=0x000202b7  lui t0, 32
-  T0239  phase=execute    pc=0x00000054 ir=0x000202b7  lui t0, 32
-  T0240  phase=fetch      pc=0x00000058 ir=0x00028293  addi t0, t0, 0
-  T0241  phase=execute    pc=0x00000058 ir=0x00028293  addi t0, t0, 0
-  T0242  phase=fetch      pc=0x0000005c ir=0x0002a283  lw t0, 0(t0)
-  T0243  phase=execute    pc=0x0000005c ir=0x0002a283  lw t0, 0(t0)
-  T0244  phase=fetch      pc=0x00000060 ir=0xffc10113  addi sp, sp, -4
-  T0245  phase=execute    pc=0x00000060 ir=0xffc10113  addi sp, sp, -4
-  T0246  phase=fetch      pc=0x00000064 ir=0x00512023  sw t0, 0(sp)
-  T0247  phase=execute    pc=0x00000064 ir=0x00512023  sw t0, 0(sp)
-  T0248  phase=fetch      pc=0x00000068 ir=0x00000313  addi t1, x0, 0
-  T0249  phase=execute    pc=0x00000068 ir=0x00000313  addi t1, x0, 0
-  T0250  phase=fetch      pc=0x0000006c ir=0xffc10113  addi sp, sp, -4
-  T0251  phase=execute    pc=0x0000006c ir=0xffc10113  addi sp, sp, -4
-  T0252  phase=fetch      pc=0x00000070 ir=0x00612023  sw t1, 0(sp)
-  T0253  phase=execute    pc=0x00000070 ir=0x00612023  sw t1, 0(sp)
-  T0254  phase=fetch      pc=0x00000074 ir=0x05900393  addi t2, x0, 89
-  T0255  phase=execute    pc=0x00000074 ir=0x05900393  addi t2, x0, 89
-  T0256  phase=fetch      pc=0x00000078 ir=0x00012303  lw t1, 0(sp)
-  T0257  phase=execute    pc=0x00000078 ir=0x00012303  lw t1, 0(sp)
-  T0258  phase=fetch      pc=0x0000007c ir=0x00410113  addi sp, sp, 4
-  T0259  phase=execute    pc=0x0000007c ir=0x00410113  addi sp, sp, 4
-  T0260  phase=fetch      pc=0x00000080 ir=0x00012283  lw t0, 0(sp)
-  T0261  phase=execute    pc=0x00000080 ir=0x00012283  lw t0, 0(sp)
-  T0262  phase=fetch      pc=0x00000084 ir=0x00410113  addi sp, sp, 4
-  T0263  phase=execute    pc=0x00000084 ir=0x00410113  addi sp, sp, 4
-  T0264  phase=fetch      pc=0x00000088 ir=0x00200e13  addi t3, x0, 2
-  T0265  phase=execute    pc=0x00000088 ir=0x00200e13  addi t3, x0, 2
-  T0266  phase=fetch      pc=0x0000008c ir=0x01c31333  sll t1, t1, t3
-  T0267  phase=execute    pc=0x0000008c ir=0x01c31333  sll t1, t1, t3
-  T0268  phase=fetch      pc=0x00000090 ir=0x00400e13  addi t3, x0, 4
-  T0269  phase=execute    pc=0x00000090 ir=0x00400e13  addi t3, x0, 4
-  T0270  phase=fetch      pc=0x00000094 ir=0x01c30333  add t1, t1, t3
-  T0271  phase=execute    pc=0x00000094 ir=0x01c30333  add t1, t1, t3
-  T0272  phase=fetch      pc=0x00000098 ir=0x006282b3  add t0, t0, t1
-  T0273  phase=execute    pc=0x00000098 ir=0x006282b3  add t0, t0, t1
-  T0274  phase=fetch      pc=0x0000009c ir=0x0072a023  sw t2, 0(t0)
-  T0275  phase=execute    pc=0x0000009c ir=0x0072a023  sw t2, 0(t0)
-  T0276  phase=fetch      pc=0x000000a0 ir=0x00038513  addi a0, t2, 0
-  T0277  phase=execute    pc=0x000000a0 ir=0x00038513  addi a0, t2, 0
-  T0278  phase=fetch      pc=0x000000a4 ir=0x00020537  lui a0, 32
-  T0279  phase=execute    pc=0x000000a4 ir=0x00020537  lui a0, 32
-  T0280  phase=fetch      pc=0x000000a8 ir=0x00050513  addi a0, a0, 0
-  T0281  phase=execute    pc=0x000000a8 ir=0x00050513  addi a0, a0, 0
-  T0282  phase=fetch      pc=0x000000ac ir=0x00052503  lw a0, 0(a0)
-  T0283  phase=execute    pc=0x000000ac ir=0x00052503  lw a0, 0(a0)
-  T0284  phase=fetch      pc=0x000000b0 ir=0x098000ef  jal ra, 152
-  T0285  phase=execute    pc=0x000000b0 ir=0x098000ef  jal ra, 152
-  T0286  phase=fetch      pc=0x00000148 ir=0xffc10113  addi sp, sp, -4
-  T0287  phase=execute    pc=0x00000148 ir=0xffc10113  addi sp, sp, -4
-  T0288  phase=fetch      pc=0x0000014c ir=0x00a12023  sw a0, 0(sp)
-  T0289  phase=execute    pc=0x0000014c ir=0x00a12023  sw a0, 0(sp)
-  T0290  phase=fetch      pc=0x00000150 ir=0x00052283  lw t0, 0(a0)
-  T0291  phase=execute    pc=0x00000150 ir=0x00052283  lw t0, 0(a0)
-  T0292  phase=fetch      pc=0x00000154 ir=0x00450313  addi t1, a0, 4
-  T0293  phase=execute    pc=0x00000154 ir=0x00450313  addi t1, a0, 4
-  T0294  phase=fetch      pc=0x00000158 ir=0x00ff0f37  lui t5, 4080
-  T0295  phase=execute    pc=0x00000158 ir=0x00ff0f37  lui t5, 4080
-  T0296  phase=fetch      pc=0x0000015c ir=0x008f0f13  addi t5, t5, 8
-  T0297  phase=execute    pc=0x0000015c ir=0x008f0f13  addi t5, t5, 8
-  T0298  phase=fetch      pc=0x00000160 ir=0x00028c63  beq t0, x0, 24
-  T0299  phase=execute    pc=0x00000160 ir=0x00028c63  beq t0, x0, 24
-  T0300  phase=fetch      pc=0x00000164 ir=0x00032f83  lw t6, 0(t1)
-  T0301  phase=execute    pc=0x00000164 ir=0x00032f83  lw t6, 0(t1)
-  T0302  phase=fetch      pc=0x00000168 ir=0x01ff2023  sw t6, 0(t5)
-  T0303  phase=execute    pc=0x00000168 ir=0x01ff2023  sw t6, 0(t5)  [out='Y']
-  T0304  phase=fetch      pc=0x0000016c ir=0x00430313  addi t1, t1, 4
-  T0305  phase=execute    pc=0x0000016c ir=0x00430313  addi t1, t1, 4
-  T0306  phase=fetch      pc=0x00000170 ir=0xfff28293  addi t0, t0, -1
-  T0307  phase=execute    pc=0x00000170 ir=0xfff28293  addi t0, t0, -1
-  T0308  phase=fetch      pc=0x00000174 ir=0xfedff06f  jal x0, -20
-  T0309  phase=execute    pc=0x00000174 ir=0xfedff06f  jal x0, -20
-  T0310  phase=fetch      pc=0x00000160 ir=0x00028c63  beq t0, x0, 24
-  T0311  phase=execute    pc=0x00000160 ir=0x00028c63  beq t0, x0, 24
-  T0312  phase=fetch      pc=0x00000164 ir=0x00032f83  lw t6, 0(t1)
-  T0313  phase=execute    pc=0x00000164 ir=0x00032f83  lw t6, 0(t1)
-  T0314  phase=fetch      pc=0x00000168 ir=0x01ff2023  sw t6, 0(t5)
-  T0315  phase=execute    pc=0x00000168 ir=0x01ff2023  sw t6, 0(t5)  [out='e']
-  T0316  phase=fetch      pc=0x0000016c ir=0x00430313  addi t1, t1, 4
-  T0317  phase=execute    pc=0x0000016c ir=0x00430313  addi t1, t1, 4
-  T0318  phase=fetch      pc=0x00000170 ir=0xfff28293  addi t0, t0, -1
-  T0319  phase=execute    pc=0x00000170 ir=0xfff28293  addi t0, t0, -1
-  T0320  phase=fetch      pc=0x00000174 ir=0xfedff06f  jal x0, -20
-  T0321  phase=execute    pc=0x00000174 ir=0xfedff06f  jal x0, -20
-  T0322  phase=fetch      pc=0x00000160 ir=0x00028c63  beq t0, x0, 24
-  T0323  phase=execute    pc=0x00000160 ir=0x00028c63  beq t0, x0, 24
-  T0324  phase=fetch      pc=0x00000164 ir=0x00032f83  lw t6, 0(t1)
-  T0325  phase=execute    pc=0x00000164 ir=0x00032f83  lw t6, 0(t1)
-  T0326  phase=fetch      pc=0x00000168 ir=0x01ff2023  sw t6, 0(t5)
-  T0327  phase=execute    pc=0x00000168 ir=0x01ff2023  sw t6, 0(t5)  [out='l']
-  T0328  phase=fetch      pc=0x0000016c ir=0x00430313  addi t1, t1, 4
-  T0329  phase=execute    pc=0x0000016c ir=0x00430313  addi t1, t1, 4
-  T0330  phase=fetch      pc=0x00000170 ir=0xfff28293  addi t0, t0, -1
-  T0331  phase=execute    pc=0x00000170 ir=0xfff28293  addi t0, t0, -1
-  T0332  phase=fetch      pc=0x00000174 ir=0xfedff06f  jal x0, -20
-  T0333  phase=execute    pc=0x00000174 ir=0xfedff06f  jal x0, -20
-  T0334  phase=fetch      pc=0x00000160 ir=0x00028c63  beq t0, x0, 24
-  T0335  phase=execute    pc=0x00000160 ir=0x00028c63  beq t0, x0, 24
-  T0336  phase=fetch      pc=0x00000164 ir=0x00032f83  lw t6, 0(t1)
-  T0337  phase=execute    pc=0x00000164 ir=0x00032f83  lw t6, 0(t1)
-  T0338  phase=fetch      pc=0x00000168 ir=0x01ff2023  sw t6, 0(t5)
-  T0339  phase=execute    pc=0x00000168 ir=0x01ff2023  sw t6, 0(t5)  [out='l']
-  T0340  phase=fetch      pc=0x0000016c ir=0x00430313  addi t1, t1, 4
-  T0341  phase=execute    pc=0x0000016c ir=0x00430313  addi t1, t1, 4
-  T0342  phase=fetch      pc=0x00000170 ir=0xfff28293  addi t0, t0, -1
-  T0343  phase=execute    pc=0x00000170 ir=0xfff28293  addi t0, t0, -1
-  T0344  phase=fetch      pc=0x00000174 ir=0xfedff06f  jal x0, -20
-  T0345  phase=execute    pc=0x00000174 ir=0xfedff06f  jal x0, -20
-  T0346  phase=fetch      pc=0x00000160 ir=0x00028c63  beq t0, x0, 24
-  T0347  phase=execute    pc=0x00000160 ir=0x00028c63  beq t0, x0, 24
-  T0348  phase=fetch      pc=0x00000164 ir=0x00032f83  lw t6, 0(t1)
-  T0349  phase=execute    pc=0x00000164 ir=0x00032f83  lw t6, 0(t1)
-  T0350  phase=fetch      pc=0x00000168 ir=0x01ff2023  sw t6, 0(t5)
-  T0351  phase=execute    pc=0x00000168 ir=0x01ff2023  sw t6, 0(t5)  [out='o']
-  T0352  phase=fetch      pc=0x0000016c ir=0x00430313  addi t1, t1, 4
-  T0353  phase=execute    pc=0x0000016c ir=0x00430313  addi t1, t1, 4
-  T0354  phase=fetch      pc=0x00000170 ir=0xfff28293  addi t0, t0, -1
-  T0355  phase=execute    pc=0x00000170 ir=0xfff28293  addi t0, t0, -1
-  T0356  phase=fetch      pc=0x00000174 ir=0xfedff06f  jal x0, -20
-  T0357  phase=execute    pc=0x00000174 ir=0xfedff06f  jal x0, -20
-  T0358  phase=fetch      pc=0x00000160 ir=0x00028c63  beq t0, x0, 24
-  T0359  phase=execute    pc=0x00000160 ir=0x00028c63  beq t0, x0, 24  [branch=taken]
-  T0360  phase=fetch      pc=0x00000178 ir=0x00012503  lw a0, 0(sp)
-  T0361  phase=execute    pc=0x00000178 ir=0x00012503  lw a0, 0(sp)
-  T0362  phase=fetch      pc=0x0000017c ir=0x00410113  addi sp, sp, 4
-  T0363  phase=execute    pc=0x0000017c ir=0x00410113  addi sp, sp, 4
-  T0364  phase=fetch      pc=0x00000180 ir=0x00008067  jalr x0, 0(ra)
-  T0365  phase=execute    pc=0x00000180 ir=0x00008067  jalr x0, 0(ra)
-  T0366  phase=fetch      pc=0x000000b4 ir=0xfff00073  halt
-  T0367  phase=execute    pc=0x000000b4 ir=0xfff00073  halt  [halt]
+  T0016  phase=fetch      pc=0x00000024 ir=0x0d4000ef  jal ra, 212
+  T0017  phase=execute    pc=0x00000024 ir=0x0d4000ef  jal ra, 212
+  T0018  phase=fetch      pc=0x000000f8 ir=0xffc10113  addi sp, sp, -4
+  T0019  phase=execute    pc=0x000000f8 ir=0xffc10113  addi sp, sp, -4
+  T0020  phase=fetch      pc=0x000000fc ir=0x00a12023  sw a0, 0(sp)
+  T0021  phase=execute    pc=0x000000fc ir=0x00a12023  sw a0, 0(sp)
+  T0022  phase=fetch      pc=0x00000100 ir=0x00052283  lw t0, 0(a0)
+  T0023  phase=execute    pc=0x00000100 ir=0x00052283  lw t0, 0(a0)
+  T0024  phase=fetch      pc=0x00000104 ir=0x00450313  addi t1, a0, 4
+  T0025  phase=execute    pc=0x00000104 ir=0x00450313  addi t1, a0, 4
+  T0026  phase=fetch      pc=0x00000108 ir=0x00ff0f37  lui t5, 4080
+  T0027  phase=execute    pc=0x00000108 ir=0x00ff0f37  lui t5, 4080
+  T0028  phase=fetch      pc=0x0000010c ir=0x008f0f13  addi t5, t5, 8
+  T0029  phase=execute    pc=0x0000010c ir=0x008f0f13  addi t5, t5, 8
+  T0030  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0031  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0032  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0033  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0034  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0035  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='H']
+  T0036  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0037  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0038  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0039  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0040  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0041  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0042  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0043  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0044  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0045  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0046  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0047  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='e']
+  T0048  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0049  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0050  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0051  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0052  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0053  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0054  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0055  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0056  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0057  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0058  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0059  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='l']
+  T0060  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0061  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0062  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0063  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0064  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0065  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0066  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0067  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0068  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0069  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0070  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0071  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='l']
+  T0072  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0073  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0074  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0075  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0076  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0077  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0078  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0079  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0080  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0081  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0082  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0083  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='o']
+  T0084  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0085  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0086  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0087  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0088  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0089  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0090  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0091  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0092  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0093  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0094  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0095  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out=' ']
+  T0096  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0097  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0098  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0099  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0100  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0101  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0102  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0103  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0104  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0105  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0106  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0107  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='f']
+  T0108  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0109  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0110  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0111  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0112  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0113  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0114  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0115  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0116  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0117  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0118  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0119  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='r']
+  T0120  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0121  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0122  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0123  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0124  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0125  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0126  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0127  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0128  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0129  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0130  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0131  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='o']
+  T0132  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0133  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0134  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0135  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0136  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0137  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0138  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0139  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0140  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0141  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0142  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0143  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='m']
+  T0144  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0145  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0146  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0147  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0148  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0149  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0150  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0151  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0152  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0153  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0154  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0155  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out=' ']
+  T0156  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0157  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0158  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0159  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0160  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0161  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0162  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0163  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0164  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0165  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0166  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0167  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='s']
+  T0168  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0169  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0170  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0171  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0172  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0173  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0174  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0175  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0176  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0177  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0178  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0179  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='t']
+  T0180  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0181  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0182  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0183  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0184  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0185  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0186  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0187  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0188  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0189  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0190  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0191  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='a']
+  T0192  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0193  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0194  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0195  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0196  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0197  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0198  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0199  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0200  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0201  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0202  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0203  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='t']
+  T0204  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0205  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0206  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0207  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0208  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0209  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0210  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0211  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0212  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0213  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0214  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0215  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='i']
+  T0216  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0217  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0218  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0219  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0220  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0221  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0222  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0223  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0224  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0225  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0226  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0227  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='c']
+  T0228  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0229  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0230  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0231  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0232  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0233  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0234  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0235  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0236  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0237  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0238  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0239  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out=' ']
+  T0240  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0241  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0242  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0243  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0244  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0245  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0246  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0247  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0248  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0249  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0250  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0251  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='p']
+  T0252  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0253  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0254  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0255  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0256  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0257  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0258  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0259  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0260  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0261  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0262  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0263  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='s']
+  T0264  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0265  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0266  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0267  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0268  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0269  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0270  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0271  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0272  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0273  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0274  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0275  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='t']
+  T0276  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0277  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0278  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0279  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0280  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0281  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0282  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0283  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0284  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0285  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0286  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0287  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='r']
+  T0288  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0289  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0290  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0291  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0292  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0293  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0294  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0295  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24  [branch=taken]
+  T0296  phase=fetch      pc=0x00000128 ir=0x00012503  lw a0, 0(sp)
+  T0297  phase=execute    pc=0x00000128 ir=0x00012503  lw a0, 0(sp)
+  T0298  phase=fetch      pc=0x0000012c ir=0x00410113  addi sp, sp, 4
+  T0299  phase=execute    pc=0x0000012c ir=0x00410113  addi sp, sp, 4
+  T0300  phase=fetch      pc=0x00000130 ir=0x00008067  jalr x0, 0(ra)
+  T0301  phase=execute    pc=0x00000130 ir=0x00008067  jalr x0, 0(ra)
+  T0302  phase=fetch      pc=0x00000028 ir=0x00010537  lui a0, 16
+  T0303  phase=execute    pc=0x00000028 ir=0x00010537  lui a0, 16
+  T0304  phase=fetch      pc=0x0000002c ir=0x06050513  addi a0, a0, 96
+  T0305  phase=execute    pc=0x0000002c ir=0x06050513  addi a0, a0, 96
+  T0306  phase=fetch      pc=0x00000030 ir=0x0c8000ef  jal ra, 200
+  T0307  phase=execute    pc=0x00000030 ir=0x0c8000ef  jal ra, 200
+  T0308  phase=fetch      pc=0x000000f8 ir=0xffc10113  addi sp, sp, -4
+  T0309  phase=execute    pc=0x000000f8 ir=0xffc10113  addi sp, sp, -4
+  T0310  phase=fetch      pc=0x000000fc ir=0x00a12023  sw a0, 0(sp)
+  T0311  phase=execute    pc=0x000000fc ir=0x00a12023  sw a0, 0(sp)
+  T0312  phase=fetch      pc=0x00000100 ir=0x00052283  lw t0, 0(a0)
+  T0313  phase=execute    pc=0x00000100 ir=0x00052283  lw t0, 0(a0)
+  T0314  phase=fetch      pc=0x00000104 ir=0x00450313  addi t1, a0, 4
+  T0315  phase=execute    pc=0x00000104 ir=0x00450313  addi t1, a0, 4
+  T0316  phase=fetch      pc=0x00000108 ir=0x00ff0f37  lui t5, 4080
+  T0317  phase=execute    pc=0x00000108 ir=0x00ff0f37  lui t5, 4080
+  T0318  phase=fetch      pc=0x0000010c ir=0x008f0f13  addi t5, t5, 8
+  T0319  phase=execute    pc=0x0000010c ir=0x008f0f13  addi t5, t5, 8
+  T0320  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0321  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0322  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0323  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0324  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0325  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='\n']
+  T0326  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0327  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0328  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0329  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0330  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0331  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0332  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0333  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24  [branch=taken]
+  T0334  phase=fetch      pc=0x00000128 ir=0x00012503  lw a0, 0(sp)
+  T0335  phase=execute    pc=0x00000128 ir=0x00012503  lw a0, 0(sp)
+  T0336  phase=fetch      pc=0x0000012c ir=0x00410113  addi sp, sp, 4
+  T0337  phase=execute    pc=0x0000012c ir=0x00410113  addi sp, sp, 4
+  T0338  phase=fetch      pc=0x00000130 ir=0x00008067  jalr x0, 0(ra)
+  T0339  phase=execute    pc=0x00000130 ir=0x00008067  jalr x0, 0(ra)
+  T0340  phase=fetch      pc=0x00000034 ir=0x00010537  lui a0, 16
+  T0341  phase=execute    pc=0x00000034 ir=0x00010537  lui a0, 16
+  T0342  phase=fetch      pc=0x00000038 ir=0x06850513  addi a0, a0, 104
+  T0343  phase=execute    pc=0x00000038 ir=0x06850513  addi a0, a0, 104
+  T0344  phase=fetch      pc=0x0000003c ir=0x0bc000ef  jal ra, 188
+  T0345  phase=execute    pc=0x0000003c ir=0x0bc000ef  jal ra, 188
+  T0346  phase=fetch      pc=0x000000f8 ir=0xffc10113  addi sp, sp, -4
+  T0347  phase=execute    pc=0x000000f8 ir=0xffc10113  addi sp, sp, -4
+  T0348  phase=fetch      pc=0x000000fc ir=0x00a12023  sw a0, 0(sp)
+  T0349  phase=execute    pc=0x000000fc ir=0x00a12023  sw a0, 0(sp)
+  T0350  phase=fetch      pc=0x00000100 ir=0x00052283  lw t0, 0(a0)
+  T0351  phase=execute    pc=0x00000100 ir=0x00052283  lw t0, 0(a0)
+  T0352  phase=fetch      pc=0x00000104 ir=0x00450313  addi t1, a0, 4
+  T0353  phase=execute    pc=0x00000104 ir=0x00450313  addi t1, a0, 4
+  T0354  phase=fetch      pc=0x00000108 ir=0x00ff0f37  lui t5, 4080
+  T0355  phase=execute    pc=0x00000108 ir=0x00ff0f37  lui t5, 4080
+  T0356  phase=fetch      pc=0x0000010c ir=0x008f0f13  addi t5, t5, 8
+  T0357  phase=execute    pc=0x0000010c ir=0x008f0f13  addi t5, t5, 8
+  T0358  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0359  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0360  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0361  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0362  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0363  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='S']
+  T0364  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0365  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0366  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0367  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0368  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0369  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0370  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0371  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0372  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0373  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0374  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0375  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='t']
+  T0376  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0377  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0378  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0379  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0380  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0381  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0382  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0383  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0384  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0385  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0386  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0387  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='r']
+  T0388  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0389  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0390  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0391  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0392  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0393  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0394  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0395  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0396  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0397  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0398  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0399  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='i']
+  T0400  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0401  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0402  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0403  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0404  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0405  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0406  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0407  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0408  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0409  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0410  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0411  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='n']
+  T0412  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0413  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0414  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0415  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0416  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0417  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0418  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0419  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0420  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0421  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0422  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0423  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='g']
+  T0424  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0425  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0426  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0427  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0428  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0429  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0430  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0431  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0432  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0433  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0434  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0435  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out=' ']
+  T0436  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0437  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0438  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0439  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0440  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0441  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0442  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0443  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0444  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0445  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0446  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0447  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='l']
+  T0448  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0449  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0450  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0451  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0452  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0453  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0454  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0455  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0456  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0457  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0458  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0459  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='i']
+  T0460  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0461  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0462  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0463  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0464  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0465  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0466  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0467  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0468  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0469  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0470  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0471  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='t']
+  T0472  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0473  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0474  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0475  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0476  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0477  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0478  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0479  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0480  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0481  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0482  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0483  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='e']
+  T0484  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0485  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0486  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0487  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0488  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0489  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0490  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0491  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0492  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0493  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0494  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0495  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='r']
+  T0496  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0497  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0498  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0499  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0500  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0501  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0502  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0503  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0504  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0505  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0506  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0507  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='a']
+  T0508  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0509  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0510  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0511  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0512  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0513  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0514  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0515  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0516  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0517  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0518  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0519  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='l']
+  T0520  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0521  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0522  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0523  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0524  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0525  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0526  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0527  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0528  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0529  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0530  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0531  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='s']
+  T0532  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0533  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0534  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0535  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0536  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0537  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0538  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0539  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0540  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0541  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0542  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0543  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out=' ']
+  T0544  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0545  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0546  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0547  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0548  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0549  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0550  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0551  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0552  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0553  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0554  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0555  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='s']
+  T0556  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0557  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0558  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0559  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0560  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0561  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0562  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0563  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0564  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0565  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0566  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0567  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='t']
+  T0568  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0569  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0570  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0571  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0572  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0573  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0574  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0575  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0576  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0577  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0578  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0579  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='i']
+  T0580  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0581  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0582  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0583  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0584  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0585  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0586  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0587  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0588  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0589  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0590  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0591  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='l']
+  T0592  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0593  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0594  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0595  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0596  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0597  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0598  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0599  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0600  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0601  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0602  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0603  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='l']
+  T0604  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0605  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0606  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0607  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0608  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0609  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0610  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0611  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0612  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0613  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0614  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0615  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out=' ']
+  T0616  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0617  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0618  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0619  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0620  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0621  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0622  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0623  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0624  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0625  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0626  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0627  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='w']
+  T0628  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0629  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0630  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0631  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0632  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0633  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0634  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0635  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0636  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0637  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0638  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0639  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='o']
+  T0640  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0641  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0642  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0643  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0644  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0645  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0646  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0647  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0648  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0649  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0650  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0651  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='r']
+  T0652  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0653  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0654  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0655  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0656  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0657  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0658  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0659  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0660  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0661  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0662  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0663  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='k']
+  T0664  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0665  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0666  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0667  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0668  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0669  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0670  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0671  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24  [branch=taken]
+  T0672  phase=fetch      pc=0x00000128 ir=0x00012503  lw a0, 0(sp)
+  T0673  phase=execute    pc=0x00000128 ir=0x00012503  lw a0, 0(sp)
+  T0674  phase=fetch      pc=0x0000012c ir=0x00410113  addi sp, sp, 4
+  T0675  phase=execute    pc=0x0000012c ir=0x00410113  addi sp, sp, 4
+  T0676  phase=fetch      pc=0x00000130 ir=0x00008067  jalr x0, 0(ra)
+  T0677  phase=execute    pc=0x00000130 ir=0x00008067  jalr x0, 0(ra)
+  T0678  phase=fetch      pc=0x00000040 ir=0x00010537  lui a0, 16
+  T0679  phase=execute    pc=0x00000040 ir=0x00010537  lui a0, 16
+  T0680  phase=fetch      pc=0x00000044 ir=0x06050513  addi a0, a0, 96
+  T0681  phase=execute    pc=0x00000044 ir=0x06050513  addi a0, a0, 96
+  T0682  phase=fetch      pc=0x00000048 ir=0x0b0000ef  jal ra, 176
+  T0683  phase=execute    pc=0x00000048 ir=0x0b0000ef  jal ra, 176
+  T0684  phase=fetch      pc=0x000000f8 ir=0xffc10113  addi sp, sp, -4
+  T0685  phase=execute    pc=0x000000f8 ir=0xffc10113  addi sp, sp, -4
+  T0686  phase=fetch      pc=0x000000fc ir=0x00a12023  sw a0, 0(sp)
+  T0687  phase=execute    pc=0x000000fc ir=0x00a12023  sw a0, 0(sp)
+  T0688  phase=fetch      pc=0x00000100 ir=0x00052283  lw t0, 0(a0)
+  T0689  phase=execute    pc=0x00000100 ir=0x00052283  lw t0, 0(a0)
+  T0690  phase=fetch      pc=0x00000104 ir=0x00450313  addi t1, a0, 4
+  T0691  phase=execute    pc=0x00000104 ir=0x00450313  addi t1, a0, 4
+  T0692  phase=fetch      pc=0x00000108 ir=0x00ff0f37  lui t5, 4080
+  T0693  phase=execute    pc=0x00000108 ir=0x00ff0f37  lui t5, 4080
+  T0694  phase=fetch      pc=0x0000010c ir=0x008f0f13  addi t5, t5, 8
+  T0695  phase=execute    pc=0x0000010c ir=0x008f0f13  addi t5, t5, 8
+  T0696  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0697  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0698  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0699  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0700  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0701  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='\n']
+  T0702  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0703  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0704  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0705  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0706  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0707  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0708  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0709  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24  [branch=taken]
+  T0710  phase=fetch      pc=0x00000128 ir=0x00012503  lw a0, 0(sp)
+  T0711  phase=execute    pc=0x00000128 ir=0x00012503  lw a0, 0(sp)
+  T0712  phase=fetch      pc=0x0000012c ir=0x00410113  addi sp, sp, 4
+  T0713  phase=execute    pc=0x0000012c ir=0x00410113  addi sp, sp, 4
+  T0714  phase=fetch      pc=0x00000130 ir=0x00008067  jalr x0, 0(ra)
+  T0715  phase=execute    pc=0x00000130 ir=0x00008067  jalr x0, 0(ra)
+  T0716  phase=fetch      pc=0x0000004c ir=0x02a00513  addi a0, x0, 42
+  T0717  phase=execute    pc=0x0000004c ir=0x02a00513  addi a0, x0, 42
+  T0718  phase=fetch      pc=0x00000050 ir=0x018000ef  jal ra, 24
+  T0719  phase=execute    pc=0x00000050 ir=0x018000ef  jal ra, 24
+  T0720  phase=fetch      pc=0x00000068 ir=0xffc10113  addi sp, sp, -4
+  T0721  phase=execute    pc=0x00000068 ir=0xffc10113  addi sp, sp, -4
+  T0722  phase=fetch      pc=0x0000006c ir=0x00a12023  sw a0, 0(sp)
+  T0723  phase=execute    pc=0x0000006c ir=0x00a12023  sw a0, 0(sp)
+  T0724  phase=fetch      pc=0x00000070 ir=0x00054463  blt a0, x0, 8
+  T0725  phase=execute    pc=0x00000070 ir=0x00054463  blt a0, x0, 8
+  T0726  phase=fetch      pc=0x00000074 ir=0x0180006f  jal x0, 24
+  T0727  phase=execute    pc=0x00000074 ir=0x0180006f  jal x0, 24
+  T0728  phase=fetch      pc=0x0000008c ir=0x04050863  beq a0, x0, 80
+  T0729  phase=execute    pc=0x0000008c ir=0x04050863  beq a0, x0, 80
+  T0730  phase=fetch      pc=0x00000090 ir=0x00000313  addi t1, x0, 0
+  T0731  phase=execute    pc=0x00000090 ir=0x00000313  addi t1, x0, 0
+  T0732  phase=fetch      pc=0x00000094 ir=0x00a00393  addi t2, x0, 10
+  T0733  phase=execute    pc=0x00000094 ir=0x00a00393  addi t2, x0, 10
+  T0734  phase=fetch      pc=0x00000098 ir=0x02754e33  div t3, a0, t2
+  T0735  phase=execute    pc=0x00000098 ir=0x02754e33  div t3, a0, t2
+  T0736  phase=fetch      pc=0x0000009c ir=0x02756eb3  rem t4, a0, t2
+  T0737  phase=execute    pc=0x0000009c ir=0x02756eb3  rem t4, a0, t2
+  T0738  phase=fetch      pc=0x000000a0 ir=0xffc10113  addi sp, sp, -4
+  T0739  phase=execute    pc=0x000000a0 ir=0xffc10113  addi sp, sp, -4
+  T0740  phase=fetch      pc=0x000000a4 ir=0x01d12023  sw t4, 0(sp)
+  T0741  phase=execute    pc=0x000000a4 ir=0x01d12023  sw t4, 0(sp)
+  T0742  phase=fetch      pc=0x000000a8 ir=0x00130313  addi t1, t1, 1
+  T0743  phase=execute    pc=0x000000a8 ir=0x00130313  addi t1, t1, 1
+  T0744  phase=fetch      pc=0x000000ac ir=0x000e0513  addi a0, t3, 0
+  T0745  phase=execute    pc=0x000000ac ir=0x000e0513  addi a0, t3, 0
+  T0746  phase=fetch      pc=0x000000b0 ir=0xfe0514e3  bne a0, x0, -24
+  T0747  phase=execute    pc=0x000000b0 ir=0xfe0514e3  bne a0, x0, -24  [branch=taken]
+  T0748  phase=fetch      pc=0x00000098 ir=0x02754e33  div t3, a0, t2
+  T0749  phase=execute    pc=0x00000098 ir=0x02754e33  div t3, a0, t2
+  T0750  phase=fetch      pc=0x0000009c ir=0x02756eb3  rem t4, a0, t2
+  T0751  phase=execute    pc=0x0000009c ir=0x02756eb3  rem t4, a0, t2
+  T0752  phase=fetch      pc=0x000000a0 ir=0xffc10113  addi sp, sp, -4
+  T0753  phase=execute    pc=0x000000a0 ir=0xffc10113  addi sp, sp, -4
+  T0754  phase=fetch      pc=0x000000a4 ir=0x01d12023  sw t4, 0(sp)
+  T0755  phase=execute    pc=0x000000a4 ir=0x01d12023  sw t4, 0(sp)
+  T0756  phase=fetch      pc=0x000000a8 ir=0x00130313  addi t1, t1, 1
+  T0757  phase=execute    pc=0x000000a8 ir=0x00130313  addi t1, t1, 1
+  T0758  phase=fetch      pc=0x000000ac ir=0x000e0513  addi a0, t3, 0
+  T0759  phase=execute    pc=0x000000ac ir=0x000e0513  addi a0, t3, 0
+  T0760  phase=fetch      pc=0x000000b0 ir=0xfe0514e3  bne a0, x0, -24
+  T0761  phase=execute    pc=0x000000b0 ir=0xfe0514e3  bne a0, x0, -24
+  T0762  phase=fetch      pc=0x000000b4 ir=0x00ff0f37  lui t5, 4080
+  T0763  phase=execute    pc=0x000000b4 ir=0x00ff0f37  lui t5, 4080
+  T0764  phase=fetch      pc=0x000000b8 ir=0x008f0f13  addi t5, t5, 8
+  T0765  phase=execute    pc=0x000000b8 ir=0x008f0f13  addi t5, t5, 8
+  T0766  phase=fetch      pc=0x000000bc ir=0x03000f93  addi t6, x0, 48
+  T0767  phase=execute    pc=0x000000bc ir=0x03000f93  addi t6, x0, 48
+  T0768  phase=fetch      pc=0x000000c0 ir=0x00012503  lw a0, 0(sp)
+  T0769  phase=execute    pc=0x000000c0 ir=0x00012503  lw a0, 0(sp)
+  T0770  phase=fetch      pc=0x000000c4 ir=0x00410113  addi sp, sp, 4
+  T0771  phase=execute    pc=0x000000c4 ir=0x00410113  addi sp, sp, 4
+  T0772  phase=fetch      pc=0x000000c8 ir=0x01f50533  add a0, a0, t6
+  T0773  phase=execute    pc=0x000000c8 ir=0x01f50533  add a0, a0, t6
+  T0774  phase=fetch      pc=0x000000cc ir=0x00af2023  sw a0, 0(t5)
+  T0775  phase=execute    pc=0x000000cc ir=0x00af2023  sw a0, 0(t5)  [out='4']
+  T0776  phase=fetch      pc=0x000000d0 ir=0xfff30313  addi t1, t1, -1
+  T0777  phase=execute    pc=0x000000d0 ir=0xfff30313  addi t1, t1, -1
+  T0778  phase=fetch      pc=0x000000d4 ir=0xfe0316e3  bne t1, x0, -20
+  T0779  phase=execute    pc=0x000000d4 ir=0xfe0316e3  bne t1, x0, -20  [branch=taken]
+  T0780  phase=fetch      pc=0x000000c0 ir=0x00012503  lw a0, 0(sp)
+  T0781  phase=execute    pc=0x000000c0 ir=0x00012503  lw a0, 0(sp)
+  T0782  phase=fetch      pc=0x000000c4 ir=0x00410113  addi sp, sp, 4
+  T0783  phase=execute    pc=0x000000c4 ir=0x00410113  addi sp, sp, 4
+  T0784  phase=fetch      pc=0x000000c8 ir=0x01f50533  add a0, a0, t6
+  T0785  phase=execute    pc=0x000000c8 ir=0x01f50533  add a0, a0, t6
+  T0786  phase=fetch      pc=0x000000cc ir=0x00af2023  sw a0, 0(t5)
+  T0787  phase=execute    pc=0x000000cc ir=0x00af2023  sw a0, 0(t5)  [out='2']
+  T0788  phase=fetch      pc=0x000000d0 ir=0xfff30313  addi t1, t1, -1
+  T0789  phase=execute    pc=0x000000d0 ir=0xfff30313  addi t1, t1, -1
+  T0790  phase=fetch      pc=0x000000d4 ir=0xfe0316e3  bne t1, x0, -20
+  T0791  phase=execute    pc=0x000000d4 ir=0xfe0316e3  bne t1, x0, -20
+  T0792  phase=fetch      pc=0x000000d8 ir=0x0140006f  jal x0, 20
+  T0793  phase=execute    pc=0x000000d8 ir=0x0140006f  jal x0, 20
+  T0794  phase=fetch      pc=0x000000ec ir=0x00012503  lw a0, 0(sp)
+  T0795  phase=execute    pc=0x000000ec ir=0x00012503  lw a0, 0(sp)
+  T0796  phase=fetch      pc=0x000000f0 ir=0x00410113  addi sp, sp, 4
+  T0797  phase=execute    pc=0x000000f0 ir=0x00410113  addi sp, sp, 4
+  T0798  phase=fetch      pc=0x000000f4 ir=0x00008067  jalr x0, 0(ra)
+  T0799  phase=execute    pc=0x000000f4 ir=0x00008067  jalr x0, 0(ra)
+  T0800  phase=fetch      pc=0x00000054 ir=0x00010537  lui a0, 16
+  T0801  phase=execute    pc=0x00000054 ir=0x00010537  lui a0, 16
+  T0802  phase=fetch      pc=0x00000058 ir=0x06050513  addi a0, a0, 96
+  T0803  phase=execute    pc=0x00000058 ir=0x06050513  addi a0, a0, 96
+  T0804  phase=fetch      pc=0x0000005c ir=0x09c000ef  jal ra, 156
+  T0805  phase=execute    pc=0x0000005c ir=0x09c000ef  jal ra, 156
+  T0806  phase=fetch      pc=0x000000f8 ir=0xffc10113  addi sp, sp, -4
+  T0807  phase=execute    pc=0x000000f8 ir=0xffc10113  addi sp, sp, -4
+  T0808  phase=fetch      pc=0x000000fc ir=0x00a12023  sw a0, 0(sp)
+  T0809  phase=execute    pc=0x000000fc ir=0x00a12023  sw a0, 0(sp)
+  T0810  phase=fetch      pc=0x00000100 ir=0x00052283  lw t0, 0(a0)
+  T0811  phase=execute    pc=0x00000100 ir=0x00052283  lw t0, 0(a0)
+  T0812  phase=fetch      pc=0x00000104 ir=0x00450313  addi t1, a0, 4
+  T0813  phase=execute    pc=0x00000104 ir=0x00450313  addi t1, a0, 4
+  T0814  phase=fetch      pc=0x00000108 ir=0x00ff0f37  lui t5, 4080
+  T0815  phase=execute    pc=0x00000108 ir=0x00ff0f37  lui t5, 4080
+  T0816  phase=fetch      pc=0x0000010c ir=0x008f0f13  addi t5, t5, 8
+  T0817  phase=execute    pc=0x0000010c ir=0x008f0f13  addi t5, t5, 8
+  T0818  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0819  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0820  phase=fetch      pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0821  phase=execute    pc=0x00000114 ir=0x00032f83  lw t6, 0(t1)
+  T0822  phase=fetch      pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)
+  T0823  phase=execute    pc=0x00000118 ir=0x01ff2023  sw t6, 0(t5)  [out='\n']
+  T0824  phase=fetch      pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0825  phase=execute    pc=0x0000011c ir=0x00430313  addi t1, t1, 4
+  T0826  phase=fetch      pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0827  phase=execute    pc=0x00000120 ir=0xfff28293  addi t0, t0, -1
+  T0828  phase=fetch      pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0829  phase=execute    pc=0x00000124 ir=0xfedff06f  jal x0, -20
+  T0830  phase=fetch      pc=0x00000110 ir=0x00028c63  beq t0, x0, 24
+  T0831  phase=execute    pc=0x00000110 ir=0x00028c63  beq t0, x0, 24  [branch=taken]
+  T0832  phase=fetch      pc=0x00000128 ir=0x00012503  lw a0, 0(sp)
+  T0833  phase=execute    pc=0x00000128 ir=0x00012503  lw a0, 0(sp)
+  T0834  phase=fetch      pc=0x0000012c ir=0x00410113  addi sp, sp, 4
+  T0835  phase=execute    pc=0x0000012c ir=0x00410113  addi sp, sp, 4
+  T0836  phase=fetch      pc=0x00000130 ir=0x00008067  jalr x0, 0(ra)
+  T0837  phase=execute    pc=0x00000130 ir=0x00008067  jalr x0, 0(ra)
+  T0838  phase=fetch      pc=0x00000060 ir=0xfff00073  halt
+  T0839  phase=execute    pc=0x00000060 ir=0xfff00073  halt  [halt]

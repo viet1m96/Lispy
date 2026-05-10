@@ -28,6 +28,7 @@ pub fn step_tick(machine: &mut Machine, trace: &mut TraceLog) -> Result<(), Stri
     };
 
     let control_unit = ControlUnit::default();
+    let datapath_block = datapath::Datapath::default();
     let phase = machine.phase();
 
     match phase {
@@ -35,7 +36,7 @@ pub fn step_tick(machine: &mut Machine, trace: &mut TraceLog) -> Result<(), Stri
             let pc = machine.pc;
             let control_step = control_unit.fetch_step(&machine.control_state)?;
             let datapath_note = datapath::tick_fetch(machine, &control_step.signals)?;
-            let ir = machine.ir;
+            let ir = datapath_block.ir.read(machine);
             trace.push(
                 tick,
                 phase,
@@ -51,7 +52,7 @@ pub fn step_tick(machine: &mut Machine, trace: &mut TraceLog) -> Result<(), Stri
         }
         Phase::Execute => {
             let pc_old = machine.pc;
-            let ir = machine.ir;
+            let ir = datapath_block.ir.read(machine);
             let inst = Instruction::decode(ir)?;
             let decoded = control_unit.decode(&inst);
             let branch_flags = datapath::branch_feedback(machine, &inst, &decoded)?;
@@ -83,7 +84,7 @@ pub fn step_tick(machine: &mut Machine, trace: &mut TraceLog) -> Result<(), Stri
         }
         Phase::VecOp => {
             let pc_old = machine.pc;
-            let ir = machine.ir;
+            let ir = datapath_block.ir.read(machine);
             let inst = Instruction::decode(ir)?;
             let decoded = control_unit.decode(&inst);
             let lane_done = machine.vector.lane_done();
@@ -111,7 +112,7 @@ pub fn step_tick(machine: &mut Machine, trace: &mut TraceLog) -> Result<(), Stri
         }
         Phase::TrapEnter => {
             let pc = machine.pc;
-            let ir = machine.ir;
+            let ir = datapath_block.ir.read(machine);
             let control_step = control_unit.trap_enter_step(&machine.control_state)?;
             let datapath_note = datapath::apply_trap_enter(machine, &control_step.signals)?;
             trace.push(
@@ -132,7 +133,7 @@ pub fn step_tick(machine: &mut Machine, trace: &mut TraceLog) -> Result<(), Stri
                 tick,
                 phase,
                 machine.pc,
-                machine.ir,
+                datapath_block.ir.read(machine),
                 format!("{}cu: StateRegister.Q=Halt NextStateLogic.D=Halt; signals: pc_wr=0 ir_wr=0 reg_wr=0 mem_rd=0 mem_wr=0 halt_req=1; CPU stopped", device_note),
             );
             machine.set_halt("halt state");

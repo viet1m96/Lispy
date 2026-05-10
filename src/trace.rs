@@ -55,10 +55,6 @@ impl TraceLog {
         });
     }
 
-    pub fn render(&self) -> String {
-        self.render_mode(TraceRenderMode::Brief)
-    }
-
     pub fn render_mode(&self, mode: TraceRenderMode) -> String {
         match mode {
             TraceRenderMode::Brief => self.render_brief(),

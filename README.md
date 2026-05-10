@@ -30,21 +30,11 @@ lisp | risc | neum | hw | tick | binary | trap | mem | pstr | prob1 | vector
 
 Язык поддерживает:
 
-- числовые литералы;
-- строковые литералы с escape-последовательностями;
-- булево истинное значение `t`;
-- ложное значение `nil`;
-- идентификаторы;
 - строгие аннотации типов для `defun`, `setq` и `let`;
-- `if`, `begin`, `loop while ... do ... finally ...`;
-- `print`, `print-str`;
-- `read-char`, `read-line`;
 - низкоуровневые trap-операции `read-input-data` и `handler-done`;
 - `halt`;
-- приведения типов `as-int`, `as-i64`, `as-bool`, `as-string`;
+- приведения типов `as-int`, `as-i64`;
 - рекурсивные пользовательские функции;
-- арифметические, логические, побитовые и строковые встроенные операции;
-- heap-массивы типа `:array`;
 - vector builtins `vadd`, `vsub`, `vmul`, `vdiv`, `vcmp`, работающие над массивами по 4 элемента за vector-step.
 
 ### Синтаксис (BNF)
@@ -132,8 +122,6 @@ lisp | risc | neum | hw | tick | binary | trap | mem | pstr | prob1 | vector
 
 <cast-op> ::= "as-int"
             | "as-i64"
-            | "as-bool"
-            | "as-string"
 
 
 <call-form> ::= "(" <callable> { <expr> } ")"
@@ -146,7 +134,6 @@ lisp | risc | neum | hw | tick | binary | trap | mem | pstr | prob1 | vector
                | <compare-op>
                | <logic-op>
                | <bit-op>
-               | <string-op>
                | <array-op>
                | <vector-op>
 
@@ -177,11 +164,6 @@ lisp | risc | neum | hw | tick | binary | trap | mem | pstr | prob1 | vector
            | "shl"
            | "shr"
            | "sar"
-
-
-<string-op> ::= "strlen"
-              | "strget"
-              | "strset"
 
 
 <array-op> ::= "array"
@@ -299,7 +281,7 @@ lisp | risc | neum | hw | tick | binary | trap | mem | pstr | prob1 | vector
 | `array-set` | `array :array`, `index :int`, `value :int` | `:int` | записать элемент и вернуть записанное значение |
 | `array-size` | `array :array` | `:int` | вернуть количество элементов |
 
-Vector builtins принимают три массива: destination, left, right. Размеры всех трёх массивов должны совпадать. Возвращается destination array, поэтому результат можно использовать как обычное выражение.
+Vector builtins принимают три массива: destination, left, right. Компилятор использует размер `left`-массива для цикла; в корректной программе `destination`, `left` и `right` должны иметь совместимый размер. Отдельная runtime-проверка совпадения размеров не выполняется. Возвращается destination array, поэтому результат можно использовать как обычное выражение.
 
 | Операция | Семантика |
 |---|---|
@@ -356,8 +338,7 @@ Vector builtins принимают три массива: destination, left, rig
 | Область | Базовый адрес | Назначение |
 |---|---:|---|
 | `.text` | `0x0000_0000` | таблица векторов trap, машинный код, функции, runtime-процедуры |
-| `.rodata` | `0x0001_0000` | зарезервированная область для неизменяемых данных |
-| `.data` | `0x0002_0000` | глобальные переменные, `pstr`-литералы, служебные runtime-слоты |
+| `.data` | `0x0001_0000` | глобальные переменные, `pstr`-литералы, служебные runtime-слоты |
 | `heap` | `0x0003_0000` | динамически создаваемые строки и массивы |
 | `stack_top` | `0x000f_0000` | начальная вершина стека; стек растёт вниз |
 | `mmio` | `0x00ff_0000` | memory-mapped I/O регистры |
@@ -428,11 +409,6 @@ Vector builtins принимают три массива: destination, left, rig
 | __default_input_handler                          |
 +--------------------------------------------------+
 0x0001_0000
-+--------------------------------------------------+
-| .rodata                                          |
-| reserved for read-only constants                 |
-+--------------------------------------------------+
-0x0002_0000
 +--------------------------------------------------+
 | .data                                            |
 |                                                  |
@@ -509,7 +485,7 @@ addr + 16 : elem[3]
 ...
 ```
 
-`array` выделяет блок в heap, записывает размер в первый word, затем обнуляет элементы. Heap pointer хранится в runtime-slot `__rt_heap_ptr` и сдвигается на `4 + size * 4` байт. В `array-get` и `array-set` компилятор генерирует runtime-проверку индекса: `0 <= index < size`. При нарушении проверки печатается сообщение об ошибке и выполняется `halt`.
+`array` выделяет блок в heap, записывает размер в первый word, затем обнуляет элементы. Heap pointer хранится в runtime-slot `__rt_heap_ptr` и сдвигается на `4 + size * 4` байт. `array-get` и `array-set` вычисляют адрес элемента как `array + 4 + index * 4`; отдельной runtime-проверки границ в текущем codegen нет.
 
 ### MMIO
 
@@ -759,21 +735,18 @@ Vector extension добавляет аппаратную поддержку об
 compiler генерирует следующий шаблон:
 
 1. вычислить адреса `dst`, `left`, `right`;
-2. прочитать размеры `left` и `right`;
-3. проверить равенство размеров `left` и `right`;
-4. прочитать размер `dst`;
-5. проверить равенство размера `dst` и размера `left`;
-6. сдвинуть указатели на первый элемент: `array_ptr + 4`;
-7. вычислить количество vector-итераций: `size >> 2`;
-8. вычислить количество оставшихся scalar-элементов: `size & 3`;
-9. для каждой vector-итерации выполнить:
+2. прочитать размер `left`-массива;
+3. сдвинуть указатели на первый элемент: `array_ptr + 4`;
+4. вычислить количество vector-итераций: `size >> 2`;
+5. вычислить количество оставшихся scalar-элементов: `size & 3`;
+6. для каждой vector-итерации выполнить:
    - `vld v0, 0(left_ptr)`;
    - `vld v1, 0(right_ptr)`;
    - `vadd/vsub/vmul/vdiv/vcmpeq v2, v0, v1`;
    - `vst v2, 0(dst_ptr)`;
    - увеличить все указатели на 16 байт;
-10. выполнить scalar tail loop для `size % 4` элементов;
-11. вернуть `dst` как результат выражения.
+7. выполнить scalar tail loop для `size % 4` элементов;
+8. вернуть `dst` как результат выражения.
 
 
 ## Сравнение scalar loop и vector extension
@@ -869,18 +842,14 @@ Vector-реализация уменьшила размер машинного �
 ### Интерфейс командной строки
 
 ```text
-dump-image <input.bin>
 sim-image <input.bin> [schedule.txt] [max_ticks] [brief|full]
-dump-ast <input.lisp>
 compile-lisp <input.lisp> <out.bin>
 run-lisp <input.lisp> [schedule.txt] [max_ticks] [brief|full]
 ```
 
 Назначение команд:
 
-- `dump-image` — вывести структуру бинарного образа и listing;
 - `sim-image` — выполнить уже собранный бинарный образ;
-- `dump-ast` — распарсить Lisp-файл и вывести AST;
 - `compile-lisp` — скомпилировать Lisp в binary image и `.lst`;
 - `run-lisp` — выполнить полный путь: Lisp → binary image → simulation.
 
@@ -898,7 +867,7 @@ run-lisp <input.lisp> [schedule.txt] [max_ticks] [brief|full]
 7. Компиляция пользовательских функций.
 8. Компиляция array/vector builtins в scalar/vector ISA.
 9. Добавление runtime-процедур.
-10. Сборка `.text`, `.rodata`, `.data`.
+10. Сборка `.text` и `.data`.
 11. Разрешение меток.
 12. Кодирование инструкций в 32-битные слова.
 13. Сериализация в binary image `AKIM`.
@@ -922,7 +891,6 @@ Binary image содержит:
 - entry point;
 - базовые адреса и размеры секций;
 - bytes секции `.text`;
-- bytes секции `.rodata`;
 - bytes секции `.data`.
 
 ---
@@ -947,17 +915,11 @@ Binary image содержит:
 
 ### DataPath и Control Unit
 
-Раздел подготовлен под пять схем: общий datapath, scalar datapath, trap extension, vector extension и Control Unit. До добавления финальных изображений в репозиторий здесь оставлены стабильные markdown-placeholders.
+В репозитории используются две схемы: общий datapath с scalar, trap и vector-блоками, а также отдельная схема hardwired Control Unit.
 
-#### 1.   Общий DataPath
+#### 1. DataPath
 
-<!-- TODO: вставить изображение общего datapath -->
-![Datapath overview](fig/Full_datapath.png)
-
-#### 2. Scalar datapath
-
-<!-- TODO: вставить изображение scalar datapath -->
-![Scalar datapath](fig/Scalar_datapath.png)
+![Datapath](datapath_v2.png)
 
 Scalar datapath содержит основную часть процессора, которая исполняет обычные RISC-инструкции без trap- и vector-расширений:
 
@@ -975,10 +937,7 @@ Scalar datapath содержит основную часть процессор�
 - `PC MUX`.
 
 
-#### 3. Trap extension
-
-<!-- TODO: вставить изображение trap extension -->
-![Trap extension](fig/Trap_extension.png)
+#### 2. Trap extension
 
 Trap extension добавляет к datapath:
 
@@ -989,10 +948,7 @@ Trap extension добавляет к datapath:
 - входы `irq_pending` и `irq_id` от input device;
 
 
-#### 4. Vector extension
-
-<!-- TODO: вставить изображение vector extension -->
-![Vector extension](fig/Vector_extension.png)
+#### 3. Vector extension
 
 Vector extension добавляет к datapath:
 
@@ -1004,10 +960,9 @@ Vector extension добавляет к datapath:
 - `LaneComparator`, определяющий последний lane;
 
 
-#### 5. Control Unit
+#### 4. Control Unit
 
-<!-- TODO: вставить изображение Control Unit -->
-![Control Unit](fig/Control_unit.png)
+![Control Unit](CU_v3.png)
 
 Control Unit является hardwired. Основные внутренние блоки:
 
@@ -1117,11 +1072,6 @@ Trace содержит:
 cargo run -- compile-lisp examples/01_print_hello_world/01_hello.lisp examples/01_print_hello_world/01.bin
 ```
 
-Просмотр AST:
-
-```bash
-cargo run -- dump-ast examples/01_print_hello_world/01_hello.lisp
-```
 
 Запуск симуляции по исходнику без input schedule:
 
@@ -1151,10 +1101,4 @@ cargo run -- sim-image examples/01_print_hello_world/01.bin 100000
 
 ```bash
 cargo run -- sim-image examples/09_hello_user_name/09.bin examples/09_hello_user_name/input.txt 100000
-```
-
-Просмотр listing и структуры образа:
-
-```bash
-cargo run -- dump-image examples/01_print_hello_world/01.bin
 ```

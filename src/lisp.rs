@@ -1,5 +1,3 @@
-use std::fmt;
-
 const BUILTIN_NAMES: &[&str] = &[
     "+",
     "-",
@@ -21,9 +19,6 @@ const BUILTIN_NAMES: &[&str] = &[
     "shl",
     "shr",
     "sar",
-    "strlen",
-    "strget",
-    "strset",
     "array",
     "array-get",
     "array-set",
@@ -38,17 +33,6 @@ const BUILTIN_NAMES: &[&str] = &[
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Program {
     pub forms: Vec<TopForm>,
-}
-
-impl Program {
-    pub fn render_tree(&self) -> String {
-        let mut out = String::new();
-        out.push_str("Program\n");
-        for form in &self.forms {
-            render_top_form(form, 1, &mut out);
-        }
-        out
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -78,18 +62,6 @@ pub enum TypeName {
     Bool,
     String,
     Array,
-}
-
-impl TypeName {
-    pub fn as_str(self) -> &'static str {
-        match self {
-            Self::Int => ":int",
-            Self::I64 => ":i64",
-            Self::Bool => ":bool",
-            Self::String => ":string",
-            Self::Array => ":array",
-        }
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -147,12 +119,6 @@ pub struct Binding {
 pub enum Callee {
     Ident(String),
     Builtin(String),
-}
-
-impl fmt::Display for Program {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.render_tree())
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -502,22 +468,6 @@ impl Parser {
                     value: Box::new(value),
                 }
             }
-            "as-bool" => {
-                let value = self.parse_expr()?;
-                self.expect_rparen()?;
-                Expr::Cast {
-                    target_type: TypeName::Bool,
-                    value: Box::new(value),
-                }
-            }
-            "as-string" => {
-                let value = self.parse_expr()?;
-                self.expect_rparen()?;
-                Expr::Cast {
-                    target_type: TypeName::String,
-                    value: Box::new(value),
-                }
-            }
             "defun" => {
                 return Err("defun is only allowed as a top-level form".to_string());
             }
@@ -717,173 +667,5 @@ fn token_name(kind: &TokenKind) -> &'static str {
         TokenKind::Number(_) => "number",
         TokenKind::String(_) => "string",
         TokenKind::Symbol(_) => "symbol",
-    }
-}
-
-fn indent(level: usize, out: &mut String) {
-    for _ in 0..level {
-        out.push_str("  ");
-    }
-}
-
-fn render_top_form(form: &TopForm, depth: usize, out: &mut String) {
-    match form {
-        TopForm::Defun(defun) => {
-            indent(depth, out);
-            let params = defun
-                .params
-                .iter()
-                .map(|param| format!("{} {}", param.name, param.type_ann.as_str()))
-                .collect::<Vec<_>>()
-                .join(", ");
-            out.push_str(&format!(
-                "Defun {}({}) -> {}\n",
-                defun.name,
-                params,
-                defun.return_type.as_str()
-            ));
-            for expr in &defun.body {
-                render_expr(expr, depth + 1, out);
-            }
-        }
-        TopForm::Expr(expr) => render_expr(expr, depth, out),
-    }
-}
-
-fn render_expr(expr: &Expr, depth: usize, out: &mut String) {
-    match expr {
-        Expr::Number(value) => {
-            indent(depth, out);
-            out.push_str(&format!("Number {value}\n"));
-        }
-        Expr::Cast { target_type, value } => {
-            indent(depth, out);
-            out.push_str(&format!("Cast {}\n", target_type.as_str()));
-            render_expr(value, depth + 1, out);
-        }
-        Expr::String(text) => {
-            indent(depth, out);
-            out.push_str(&format!("String {:?}\n", text));
-        }
-        Expr::Bool(value) => {
-            indent(depth, out);
-            out.push_str(&format!("Bool {}\n", if *value { "t" } else { "nil" }));
-        }
-        Expr::Nil => {
-            indent(depth, out);
-            out.push_str("Nil\n");
-        }
-        Expr::Ident(name) => {
-            indent(depth, out);
-            out.push_str(&format!("Ident {name}\n"));
-        }
-        Expr::Setq {
-            name,
-            type_ann,
-            value,
-        } => {
-            indent(depth, out);
-            out.push_str(&format!("Setq {name} {}\n", type_ann.as_str()));
-            render_expr(value, depth + 1, out);
-        }
-        Expr::If {
-            cond,
-            then_branch,
-            else_branch,
-        } => {
-            indent(depth, out);
-            out.push_str("If\n");
-            indent(depth + 1, out);
-            out.push_str("Cond\n");
-            render_expr(cond, depth + 2, out);
-            indent(depth + 1, out);
-            out.push_str("Then\n");
-            render_expr(then_branch, depth + 2, out);
-            indent(depth + 1, out);
-            out.push_str("Else\n");
-            render_expr(else_branch, depth + 2, out);
-        }
-        Expr::Begin(body) => {
-            indent(depth, out);
-            out.push_str("Begin\n");
-            for item in body {
-                render_expr(item, depth + 1, out);
-            }
-        }
-        Expr::Let { bindings, body } => {
-            indent(depth, out);
-            out.push_str("Let\n");
-            indent(depth + 1, out);
-            out.push_str("Bindings\n");
-            for binding in bindings {
-                indent(depth + 2, out);
-                out.push_str(&format!("{} {}\n", binding.name, binding.type_ann.as_str()));
-                render_expr(&binding.value, depth + 3, out);
-            }
-            indent(depth + 1, out);
-            out.push_str("Body\n");
-            for item in body {
-                render_expr(item, depth + 2, out);
-            }
-        }
-        Expr::Loop {
-            cond,
-            body,
-            finally,
-        } => {
-            indent(depth, out);
-            out.push_str("Loop\n");
-            indent(depth + 1, out);
-            out.push_str("While\n");
-            render_expr(cond, depth + 2, out);
-            indent(depth + 1, out);
-            out.push_str("Do\n");
-            for item in body {
-                render_expr(item, depth + 2, out);
-            }
-            indent(depth + 1, out);
-            out.push_str("Finally\n");
-            render_expr(finally, depth + 2, out);
-        }
-        Expr::Print(value) => {
-            indent(depth, out);
-            out.push_str("Print\n");
-            render_expr(value, depth + 1, out);
-        }
-        Expr::PrintStr(value) => {
-            indent(depth, out);
-            out.push_str("PrintStr\n");
-            render_expr(value, depth + 1, out);
-        }
-        Expr::ReadChar => {
-            indent(depth, out);
-            out.push_str("ReadChar\n");
-        }
-        Expr::ReadLine => {
-            indent(depth, out);
-            out.push_str("ReadLine\n");
-        }
-        Expr::ReadInputData => {
-            indent(depth, out);
-            out.push_str("ReadInputData\n");
-        }
-        Expr::HandlerDone => {
-            indent(depth, out);
-            out.push_str("HandlerDone\n");
-        }
-        Expr::Halt => {
-            indent(depth, out);
-            out.push_str("Halt\n");
-        }
-        Expr::Call { callee, args } => {
-            indent(depth, out);
-            match callee {
-                Callee::Ident(name) => out.push_str(&format!("Call {name}\n")),
-                Callee::Builtin(name) => out.push_str(&format!("BuiltinCall {name}\n")),
-            }
-            for arg in args {
-                render_expr(arg, depth + 1, out);
-            }
-        }
     }
 }

@@ -105,10 +105,6 @@ impl RegisterFile {
     pub fn force_zero(&mut self) {
         self.regs[0] = 0;
     }
-
-    pub fn snapshot(&self) -> [u32; 32] {
-        self.regs
-    }
 }
 
 impl Default for RegisterFile {
@@ -325,6 +321,7 @@ pub struct Datapath {
     pub alu: Alu,
     pub branch_comparator: BranchComparator,
 
+    // Explicit vector datapath blocks from datapath_v2.
     pub vector_alu: VectorAlu,
     pub vector_lane_offset_shifter: LaneOffsetShifter,
     pub vector_lane_addr_adder: VectorLaneAddressAdder,
@@ -476,17 +473,20 @@ impl Datapath {
                     "VectorBaseRegister <- ALU_out=0x{base:08x}; LaneCounterRegister <- 0; IR keeps active instruction vst {vs}"
                 ));
             }
-            Instruction::VectorR { op, vd, vs1, vs2 } if sig.vector_full_write => {
+            Instruction::VectorR { vd, vs1, vs2, .. } if sig.vector_full_write => {
+                let op = sig
+                    .vector_alu_op
+                    .ok_or_else(|| "VectorR needs vec_alu_op from ControlUnit".to_string())?;
                 let lhs = machine.vector.register_file.read(*vs1);
                 let rhs = machine.vector.register_file.read(*vs2);
-                let result = self.vector_alu.execute(*op, lhs, rhs)?;
+                let result = self.vector_alu.execute(op, lhs, rhs)?;
                 machine
                     .vector
                     .register_file
                     .write_full_from_alu(*vd, result, sig.vector_full_write)
                     .ok_or_else(|| "VectorR needs vector_full_write=1".to_string())?;
                 note_parts.push(format!(
-                    "VectorRegisterFile.{vs1}={lhs:?}; VectorRegisterFile.{vs2}={rhs:?}; VectorALU({op:?})=vec_res={result:?}; vec_full_wr -> VectorRegisterFile.{vd}"
+                    "VectorRegisterFile.{vs1}={lhs:?}; VectorRegisterFile.{vs2}={rhs:?}; vec_alu_op={op:?}; VectorALU=vec_res={result:?}; vec_full_wr -> VectorRegisterFile.{vd}"
                 ));
             }
             _ => {}

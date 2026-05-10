@@ -5,44 +5,18 @@ use lispy::asm::AsmProgram;
 use lispy::compiler::compile_source;
 use lispy::exec::run_to_halt;
 use lispy::image::ProgramImage;
-use lispy::lisp::parse_program;
 use lispy::machine::Machine;
 use lispy::trace::TraceRenderMode;
 
 fn print_usage() {
     println!("lab4-rust");
-    println!("  dump-image <input.bin>                         print image summary and listing");
     println!("  sim-image <input.bin> [schedule.txt] [max_ticks] [brief|full]  run tick engine");
-    println!("  dump-ast <input.lisp>                          parse Lisp source and print AST");
     println!(
         "  compile-lisp <input.lisp> <out.bin>            compile Lisp source to binary image"
     );
     println!(
         "  run-lisp <input.lisp> [schedule.txt] [max_ticks] [brief|full]  compile and simulate"
     );
-}
-
-fn cmd_dump_image(path: &Path) -> Result<(), String> {
-    let image = ProgramImage::read_from_file(path).map_err(|e| e.to_string())?;
-    println!("entry   : 0x{:08x}", image.entry);
-    println!(
-        "text    : base=0x{:08x}, size={} bytes",
-        image.layout.text_base,
-        image.text.len()
-    );
-    println!(
-        "rodata  : base=0x{:08x}, size={} bytes",
-        image.layout.rodata_base,
-        image.rodata.len()
-    );
-    println!(
-        "data    : base=0x{:08x}, size={} bytes",
-        image.layout.data_base,
-        image.data.len()
-    );
-    println!();
-    println!("{}", image.render_listing());
-    Ok(())
 }
 
 fn cmd_sim_image(
@@ -53,13 +27,6 @@ fn cmd_sim_image(
 ) -> Result<(), String> {
     let image = ProgramImage::read_from_file(path).map_err(|e| e.to_string())?;
     run_image(&image, input_path, max_ticks, trace_mode)
-}
-
-fn cmd_dump_ast(path: &Path) -> Result<(), String> {
-    let source = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
-    let program = parse_program(&source)?;
-    print!("{}", program.render_tree());
-    Ok(())
 }
 
 fn cmd_compile_lisp(input: &Path, output: &Path) -> Result<(), String> {
@@ -164,7 +131,6 @@ fn main() {
     }
 
     let result = match args[1].as_str() {
-        "dump-image" if args.len() == 3 => cmd_dump_image(Path::new(&args[2])),
         "sim-image" if (3..=6).contains(&args.len()) => {
             let (input_path, max_ticks, trace_mode) = match parse_run_args(&args, 3) {
                 Ok(value) => value,
@@ -175,7 +141,6 @@ fn main() {
             };
             cmd_sim_image(Path::new(&args[2]), input_path, max_ticks, trace_mode)
         }
-        "dump-ast" if args.len() == 3 => cmd_dump_ast(Path::new(&args[2])),
         "compile-lisp" if args.len() == 4 => {
             cmd_compile_lisp(Path::new(&args[2]), Path::new(&args[3]))
         }
