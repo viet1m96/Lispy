@@ -922,7 +922,7 @@ Binary image содержит:
 
 #### 2. Scalar DataPath
 
-![Datapath](fig/Scalar_datapath.png)
+![Scalar Datapath](fig/Scalar_datapath.png)
 
 Scalar datapath содержит основную часть процессора, которая исполняет обычные RISC-инструкции без trap- и vector-расширений:
 
@@ -942,7 +942,7 @@ Scalar datapath содержит основную часть процессор�
 
 #### 3. Trap extension
 
-![Datapath](Trap_extension.png)
+![Trap Extension](fig/Trap_extension.png)
 
 Trap extension добавляет к datapath:
 
@@ -955,7 +955,7 @@ Trap extension добавляет к datapath:
 
 #### 4. Vector extension
 
-![Datapath](Vector_extension.png)
+![Vector Extension](fig/Vector_extension.png)
 
 Vector extension добавляет к datapath:
 
