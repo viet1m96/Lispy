@@ -915,11 +915,14 @@ Binary image содержит:
 
 ### DataPath и Control Unit
 
-В репозитории используются две схемы: общий datapath с scalar, trap и vector-блоками, а также отдельная схема hardwired Control Unit.
 
-#### 1. DataPath
+### 1. Full DataPath
 
-![Datapath](datapath_v2.png)
+![Full DataPath](fig/Full_datapath.png)
+
+#### 2. Scalar DataPath
+
+![Datapath](fig/Scalar_datapath.png)
 
 Scalar datapath содержит основную часть процессора, которая исполняет обычные RISC-инструкции без trap- и vector-расширений:
 
@@ -937,18 +940,22 @@ Scalar datapath содержит основную часть процессор�
 - `PC MUX`.
 
 
-#### 2. Trap extension
+#### 3. Trap extension
+
+![Datapath](Trap_extension.png)
 
 Trap extension добавляет к datapath:
 
 - `mstatus` с флагами `MIE` и `IN_TRAP`;
 - `vtor` — base address таблицы векторов;
 - `mepc` — адрес возврата;
-- `TrapVectorAddressGenerator`, вычисляющий `vtor + irq_id * 4`;
+- `Trap Block`, вычисляющий `vtor + irq_id * 4`;
 - входы `irq_pending` и `irq_id` от input device;
 
 
-#### 3. Vector extension
+#### 4. Vector extension
+
+![Datapath](Vector_extension.png)
 
 Vector extension добавляет к datapath:
 
@@ -960,9 +967,9 @@ Vector extension добавляет к datapath:
 - `LaneComparator`, определяющий последний lane;
 
 
-#### 4. Control Unit
+#### 5. Control Unit
 
-![Control Unit](CU_v3.png)
+![Control Unit](fig/Control_unit.png)
 
 Control Unit является hardwired. Основные внутренние блоки:
 
